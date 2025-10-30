@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\$STUDLY_NAME$\Database\Seeders;
+
+use Illuminate\Database\Seeder;
+
+/**
+ * Seeder principal para el módulo $STUDLY_NAME$.
+ * Ejecuta todos los seeders específicos del módulo.
+ */
+class $STUDLY_NAME$DatabaseSeeder extends Seeder
+{
+    /**
+     * Ejecuta los seeders de la base de datos.
+     *
+     * @return void
+     */
+    public function run(): void
+    {
+        // $this->call([
+        //     // Añadir aquí los seeders específicos del módulo
+        // ]);
+    }
+} 

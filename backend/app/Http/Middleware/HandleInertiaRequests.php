@@ -86,6 +86,7 @@ final class HandleInertiaRequests extends Middleware
                     ->diffInDays(\Illuminate\Support\Facades\Date::now());
                 $passwordChangeRequired = $passwordAge >= $maxAgeDays;
             }
+
             $sharedData['passwordChangeRequired'] = $passwordChangeRequired;
         } else {
             // Asegurarse de que las props siempre existan para el frontend

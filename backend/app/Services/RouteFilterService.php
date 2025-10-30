@@ -157,7 +157,7 @@ final class RouteFilterService
             static fn (string $pattern): bool => str_contains($pattern, '*')
         );
 
-        if (count($wildcardPatterns) > 0) {
+        if ($wildcardPatterns !== []) {
             foreach ($notMatchedRoutes as $name => $route) {
                 foreach ($wildcardPatterns as $pattern) {
                     // Convertir el patrón a expresión regular

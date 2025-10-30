@@ -61,6 +61,7 @@ final class CheckPermission
             if ($user->hasPermissionToCross($permission)) {
                 return true;
             }
+
             // Para los roles de super-admin, es crucial pasar el guard correcto.
             if ($user->hasRole(['ADMIN', 'DEV'], $guard)) {
                 return true;

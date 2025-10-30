@@ -77,7 +77,7 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
     ): array {
         // Verificar que el tipo de navegación es válido
         if (! isset(self::NAV_TYPE_CONFIG[$navType])) {
-            Log::warning("Tipo de navegación desconocido: {$navType}");
+            Log::warning('Tipo de navegación desconocido: '.$navType);
 
             return [];
         }
@@ -172,9 +172,11 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
             if (! isset($config['nav_item'])) {
                 continue;
             }
+
             if (! is_array($config['nav_item'])) {
                 continue;
             }
+
             if (! ($config['nav_item']['show_in_nav'] ?? false)) {
                 continue;
             }
@@ -230,9 +232,11 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
             if (! isset($config['nav_item'])) {
                 continue;
             }
+
             if (! is_array($config['nav_item'])) {
                 continue;
             }
+
             if (! ($config['nav_item']['show_in_nav'] ?? false)) {
                 continue;
             }
@@ -288,6 +292,7 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
             if (! isset($config['nav_item'])) {
                 continue;
             }
+
             if (! is_array($config['nav_item'])) {
                 continue;
             }
@@ -326,7 +331,7 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
 
         // Verificar coincidencia exacta o si la ruta actual comienza con el nombre de la ruta base
         return $currentRoute === $routeName
-            || str_starts_with($currentRoute, "{$routeName}.");
+            || str_starts_with($currentRoute, $routeName.'.');
     }
 
     /**
@@ -355,7 +360,7 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
                 'title' => (isset($moduleConfigArr['functional_name'])
                     && is_string($moduleConfigArr['functional_name']))
                     ? $moduleConfigArr['functional_name'] : ucfirst($moduleSlug),
-                'href' => $this->generateRoute("internal.{$moduleSlug}.panel"),
+                'href' => $this->generateRoute(sprintf('internal.%s.panel', $moduleSlug)),
             ]];
         }
 
@@ -373,7 +378,7 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
                 'title' => (isset($moduleConfigArr['functional_name'])
                     && is_string($moduleConfigArr['functional_name']))
                     ? $moduleConfigArr['functional_name'] : ucfirst($moduleSlug),
-                'href' => $this->generateRoute("internal.{$moduleSlug}.panel"),
+                'href' => $this->generateRoute(sprintf('internal.%s.panel', $moduleSlug)),
             ]];
         }
 
@@ -430,7 +435,7 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
                         ? $config['route_name_suffix']
                         : null;
                     $routeName = $routeNameSuffix !== null && $routeNameSuffix !== '' && $routeNameSuffix !== '0'
-                        ? "internal.{$moduleSlug}.{$routeNameSuffix}"
+                        ? sprintf('internal.%s.%s', $moduleSlug, $routeNameSuffix)
                         : null;
                 }
 
@@ -486,6 +491,7 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
                     $directPathFound = false;
                     break;
                 }
+
                 $value = $value[$part];
             }
 
@@ -513,6 +519,7 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
                             $alternativeFound = false;
                             break;
                         }
+
                         $value = $value[$part];
                     }
 
@@ -546,6 +553,7 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
                             $alternativeFound = false;
                             break;
                         }
+
                         $value = $value[$part];
                     }
 
@@ -558,7 +566,7 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
             // Si ninguna ruta funcionó, registrar advertencia
             if (! $directPathFound) {
                 Log::warning(
-                    "Referencia no encontrada: {$item} (intentadas rutas alternativas)"
+                    sprintf('Referencia no encontrada: %s (intentadas rutas alternativas)', $item)
                 );
 
                 return $item;
@@ -650,13 +658,13 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
         $currentRoute = Route::currentRouteName();
         if (
             ! $currentRoute
-            || ! str_starts_with($currentRoute, "internal.{$moduleSlug}.")
+            || ! str_starts_with($currentRoute, sprintf('internal.%s.', $moduleSlug))
         ) {
             return [
                 [
                     'title' => ucfirst($moduleSlug),
                     'href' => $this->generateRoute(
-                        "internal.{$moduleSlug}.panel"
+                        sprintf('internal.%s.panel', $moduleSlug)
                     ),
                 ],
             ];
@@ -664,7 +672,7 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
 
         $routeSuffix = mb_substr(
             $currentRoute,
-            mb_strlen("internal.{$moduleSlug}.")
+            mb_strlen(sprintf('internal.%s.', $moduleSlug))
         );
 
         // Intentar usar la configuración si existe
@@ -897,6 +905,7 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
             } elseif ($textKey === 'title') {
                 $errors = ContextualNavItem::validate($config);
             }
+
             if ($errors !== []) {
                 Log::warning(
                     'Configuración de item inválida',
@@ -946,8 +955,8 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
                     ? $config['route_name_suffix']
                     : null;
                 $routeName = $routeNameSuffix !== null && $routeNameSuffix !== '' && $routeNameSuffix !== '0'
-                    ? "internal.{$moduleSlug}.{$routeNameSuffix}"
-                    : "internal.{$moduleSlug}";
+                    ? sprintf('internal.%s.%s', $moduleSlug, $routeNameSuffix)
+                    : 'internal.'.$moduleSlug;
             }
 
             // Obtener los parámetros de ruta (preferir 'route_params' alias si existe)
@@ -1032,13 +1041,13 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
 
                 return route($routeName, $parameters);
             }
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             // Solo registrar errores críticos en producción
             if (app()->environment('production')) {
                 Log::error(
-                    "Error al generar ruta {$routeName}",
+                    'Error al generar ruta '.$routeName,
                     [
-                        'exception' => $e::class,
+                        'exception' => $exception::class,
                         'route_name' => $routeName,
                         'parameters' => $parameters,
                     ]

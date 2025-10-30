@@ -60,10 +60,10 @@ final class PasswordConfirmationNotification extends Notification implements Sho
                 'Alerta de Seguridad: Contraseña Confirmada para Acción Sensible'
             )
             ->greeting(
-                "¡Hola {$nameSafe}!"
+                sprintf('¡Hola %s!', $nameSafe)
             )
             ->line(
-                "Te informamos que tu contraseña ha sido utilizada para confirmar la siguiente acción: **{$this->actionType}**."
+                sprintf('Te informamos que tu contraseña ha sido utilizada para confirmar la siguiente acción: **%s**.', $this->actionType)
             );
 
         // --- Detalles de la Confirmación ---
@@ -74,13 +74,13 @@ final class PasswordConfirmationNotification extends Notification implements Sho
 
         if ($this->ipAddress !== null && $this->ipAddress !== '' && $this->ipAddress !== '0') {
             $message->line(
-                "- **Dirección IP:** {$this->ipAddress}"
+                '- **Dirección IP:** '.$this->ipAddress
             );
         }
 
         if ($this->userAgent !== null && $this->userAgent !== '' && $this->userAgent !== '0') {
             $message->line(
-                "- **Dispositivo:** {$this->userAgent}"
+                '- **Dispositivo:** '.$this->userAgent
             );
         }
 

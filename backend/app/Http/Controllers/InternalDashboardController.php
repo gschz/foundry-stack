@@ -138,12 +138,12 @@ final class InternalDashboardController extends Controller
 
             // Renderizar la vista del dashboard
             return inertia('internal-dashboard', $viewData);
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             Log::error(
                 'Error en dashboard interno',
                 [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
+                    'error' => $exception->getMessage(),
+                    'trace' => $exception->getTraceAsString(),
                     'ip' => $request->ip(),
                 ]
             );
@@ -180,11 +180,11 @@ final class InternalDashboardController extends Controller
 
             return to_route('login')
                 ->with('status', 'Sesión cerrada exitosamente.');
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             Log::error(
                 'Error durante logout',
                 [
-                    'error' => $e->getMessage(),
+                    'error' => $exception->getMessage(),
                     'ip' => $request->ip(),
                 ]
             );
@@ -234,12 +234,12 @@ final class InternalDashboardController extends Controller
                     'last_activity' => $now,
                 ])->save();
             }
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             Log::warning(
                 'No se pudo actualizar la última actividad',
                 [
                     'user_id' => $user->getAuthIdentifier(),
-                    'error' => $e->getMessage(),
+                    'error' => $exception->getMessage(),
                 ]
             );
         }

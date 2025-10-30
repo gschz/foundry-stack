@@ -215,6 +215,7 @@ abstract class ModuleOrchestrationController extends Controller
                 foreach ($item as $k => $v) {
                     $normalizedItem[(string) $k] = $v;
                 }
+
                 /** @var array<string, mixed> $normalizedItem */
                 $normalized[] = $normalizedItem;
             }
@@ -420,6 +421,7 @@ abstract class ModuleOrchestrationController extends Controller
         foreach ($routeParams as $key => $value) {
             $normalizedRouteParams[(string) $key] = $value;
         }
+
         $routeParams = $normalizedRouteParams;
 
         // Obtener la configuración de navegación del módulo
@@ -537,12 +539,12 @@ abstract class ModuleOrchestrationController extends Controller
         if (
             $currentRoute && str_starts_with(
                 $currentRoute,
-                "internal.{$this->moduleSlug}."
+                sprintf('internal.%s.', $this->moduleSlug)
             )
         ) {
             return mb_substr(
                 $currentRoute,
-                mb_strlen("internal.{$this->moduleSlug}.")
+                mb_strlen(sprintf('internal.%s.', $this->moduleSlug))
             );
         }
 
