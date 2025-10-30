@@ -37,6 +37,12 @@ return RectorConfig::configure()
     ])
     ->withSkip([
         AddOverrideAttributeToOverriddenMethodsRector::class,
+        RectorLaravel\Rector\ArrayDimFetch\EnvVariableToEnvHelperRector::class => [
+            __DIR__.'/bootstrap/app.php',
+        ],
+        RectorLaravel\Rector\ArrayDimFetch\ServerVariableToRequestFacadeRector::class => [
+            __DIR__.'/bootstrap/app.php',
+        ],
     ])
     ->withPreparedSets(
         deadCode: true,
@@ -45,5 +51,6 @@ return RectorConfig::configure()
         privatization: true,
         earlyReturn: true,
         strictBooleans: true,
+        codingStyle: true,
     )
     ->withPhpSets();
