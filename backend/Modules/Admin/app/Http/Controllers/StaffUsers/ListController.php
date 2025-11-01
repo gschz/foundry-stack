@@ -26,7 +26,9 @@ final class ListController extends AdminBaseController
             'role' => $request->input('role'),
             'sort_field' => $request->input('sort_field', 'created_at'),
             'sort_direction' => $request->input('sort_direction', 'desc'),
-            'per_page' => (int) $request->input('per_page', 10),
+            'per_page' => is_numeric($request->input('per_page'))
+                ? (int) $request->input('per_page')
+                : 10,
         ];
 
         // Datos adicionales específicos para la vista de lista

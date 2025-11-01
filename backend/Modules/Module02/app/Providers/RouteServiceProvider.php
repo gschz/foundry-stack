@@ -16,7 +16,7 @@ final class RouteServiceProvider extends ServiceProvider
     /**
      * El namespace del controlador del módulo.
      */
-    protected string $moduleNamespace = 'Modules\\Module02\\App\\Http\\Controllers';
+    private string $moduleNamespace = 'Modules\\Module02\\App\\Http\\Controllers';
 
     /**
      * Registra los servicios del módulo.
@@ -40,13 +40,13 @@ final class RouteServiceProvider extends ServiceProvider
     public function map(): void
     {
         $this->mapWebRoutes();
-        // $this->mapApiRoutes(); // Descomenta si necesitas rutas API
+        $this->mapApiRoutes();
     }
 
     /**
      * Define las rutas web para el módulo.
      */
-    protected function mapWebRoutes(): void
+    private function mapWebRoutes(): void
     {
         Route::middleware('web')
             ->namespace($this->moduleNamespace)
@@ -56,7 +56,7 @@ final class RouteServiceProvider extends ServiceProvider
     /**
      * Define las rutas API para el módulo.
      */
-    protected function mapApiRoutes(): void
+    private function mapApiRoutes(): void
     {
         Route::prefix('api')
             ->middleware('api')

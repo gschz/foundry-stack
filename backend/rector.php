@@ -29,6 +29,7 @@ return RectorConfig::configure()
     )
     ->withPaths([
         __DIR__.'/app',
+        __DIR__.'/Modules',
         __DIR__.'/bootstrap/app.php',
         __DIR__.'/config',
         __DIR__.'/../database',
@@ -50,7 +51,7 @@ return RectorConfig::configure()
         typeDeclarations: true,
         privatization: true,
         earlyReturn: true,
-        strictBooleans: true,
         codingStyle: true,
     )
-    ->withPhpSets();
+    // Set explicit PHP version to avoid composer.json lookup from CWD
+    ->withPhpSets(php84: true);

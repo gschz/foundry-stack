@@ -44,30 +44,35 @@ final class UserRequest extends FormRequest
 
         // Si es una actualización, obtener el ID del usuario para excluirlo de la validación unique
         $userParam = $this->route('user');
+        /** @var int|null $userId */
         $userId = null;
 
         if ($userParam) {
             // Si es un objeto, obtener el ID directamente
             if (is_object($userParam) && property_exists($userParam, 'id')) {
-                $userId = $userParam->id;
+                /** @var mixed $maybeId */
+                $maybeId = $userParam->id;
+                $userId = is_numeric($maybeId) ? (int) $maybeId : null;
             }
-            // Si es un string o número, usarlo como ID
-            elseif (is_string($userParam) || is_numeric($userParam)) {
-                $userId = $userParam;
+            // Si es un número (en string o int) y no es objeto, usarlo como ID
+            elseif (! is_object($userParam) && is_numeric($userParam)) {
+                $userId = (int) $userParam;
             }
         }
 
         // Regla única para el email, excepto para el usuario actual en actualizaciones
-        if ($userId) {
-            $rules['email'][] = 'unique:staff_users,email,'.$userId;
+        if ($userId !== null) {
+            $rules['email'][] = sprintf(
+                'unique:staff_users,email,%d',
+                (int) $userId
+            );
         } else {
             $rules['email'][] = 'unique:staff_users,email';
             $rules['password'] = [
                 'required',
                 'string',
-                'min:8',
                 'confirmed',
-                Password::defaults()
+                Password::min(8)
                     ->mixedCase()
                     ->numbers()
                     ->symbols()
@@ -80,9 +85,8 @@ final class UserRequest extends FormRequest
             $rules['password'] = [
                 'nullable',
                 'string',
-                'min:8',
                 'confirmed',
-                Password::defaults()
+                Password::min(8)
                     ->mixedCase()
                     ->numbers()
                     ->symbols()
@@ -130,24 +134,31 @@ final class UserRequest extends FormRequest
     public function withValidator($validator): void
     {
         // Validación personalizada para roles protegidos
-        $validator->after(function ($validator) {
+        $validator->after(function (\Illuminate\Validation\Validator $validator): void {
             if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
                 // Solo aplicar en actualizaciones
                 $user = $this->route('user');
                 if ($user instanceof StaffUsers) {
                     // Consideramos protegido a cualquier usuario que tenga roles ADMIN o DEV
-                    $requestRoles = array_map(
-                        'strtoupper',
-                        (array) $this->input('roles', [])
-                    );
+                    /** @var array<int, string> $roleNames */
+                    $roleNames = array_filter((array) $this->input(
+                        'roles',
+                        []
+                    ), 'is_string');
+                    $requestRoles = array_values(array_map(
+                        static fn (string $val): string => mb_strtoupper($val),
+                        $roleNames
+                    ));
 
                     $currentProtectedRoles = $user->roles
                         ->pluck('name')
                         ->map(
-                            fn ($name) => mb_strtoupper((string) $name)
+                            static fn ($name): string => is_string($name)
+                                ? mb_strtoupper($name) : ''
                         )
                         ->filter(
-                            fn ($name) => in_array($name, ['ADMIN', 'DEV'], true)
+                            static fn (string $name): bool => $name !== ''
+                                && in_array($name, ['ADMIN', 'DEV'], true)
                         )
                         ->values()
                         ->all();

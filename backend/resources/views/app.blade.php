@@ -9,7 +9,7 @@
     <meta name="referrer" content="same-origin">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="{{ ($appearance ?? 'light') == 'dark' ? '#1a1a1a' : '#ffffff' }}">
-    <link rel="icon" href="{{ asset('favicon.min.svg') }}" type="image/svg+xml">
+    <link rel="icon" href="{{ asset('laravel-logo.min.svg') }}" type="image/svg+xml">
     <title inertia>{{ isset($page) ? $page['props']['title'] ?? config('app.name', '') : config('app.name', '') }}</title>
     @routes
     @viteReactRefresh

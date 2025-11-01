@@ -29,9 +29,7 @@ final class EditController extends AdminBaseController
         // Obtener el usuario por ID con sus roles
         $user = $this->staffUserManager->getUserById($id);
 
-        if (! $user) {
-            abort(404, 'Usuario no encontrado');
-        }
+        abort_unless($user instanceof \App\Models\StaffUsers, 404, 'Usuario no encontrado');
 
         // Obtener todos los roles disponibles
         $roles = $this->staffUserManager->getAllRoles();
@@ -61,8 +59,8 @@ final class EditController extends AdminBaseController
         try {
             $user = $this->staffUserManager->getUserById($id);
 
-            if (! $user) {
-                return redirect()->route('internal.admin.users.index')
+            if (! $user instanceof \App\Models\StaffUsers) {
+                return to_route('internal.admin.users.index')
                     ->with(
                         'error',
                         'Usuario no encontrado. No se pudo realizar la actualización.'
@@ -71,11 +69,13 @@ final class EditController extends AdminBaseController
 
             $validatedData = $request->validated();
 
-            // Solo actualizar la contraseña si se proporciona una nueva
-            if (empty($validatedData['password'])) {
+            // Solo actualizar la contraseña si se proporciona una nueva y es string
+            /** @var mixed $rawPassword */
+            $rawPassword = $validatedData['password'] ?? null;
+            if (! is_string($rawPassword) || $rawPassword === '') {
                 unset($validatedData['password']);
             } else {
-                $validatedData['password'] = bcrypt($validatedData['password']);
+                $validatedData['password'] = bcrypt($rawPassword);
                 // Registrar fecha de cambio de contraseña
                 $validatedData['password_changed_at'] = now();
             }
@@ -83,33 +83,41 @@ final class EditController extends AdminBaseController
             $this->staffUserManager->updateUser($id, $validatedData);
 
             if ($request->has('roles')) {
-                $this->staffUserManager->syncRoles(
-                    $user,
-                    $request->input('roles', [])
-                );
+                /** @var array<mixed> $incomingRoles */
+                $incomingRoles = (array) $request->input('roles', []);
+                /** @var array<int, string|int> $filteredRoles */
+                $filteredRoles = array_values(array_filter(
+                    $incomingRoles,
+                    static fn ($r): bool => is_string($r) || is_int($r)
+                ));
+
+                $this->staffUserManager->syncRoles($user, $filteredRoles);
             }
 
-            return redirect()->route('internal.admin.users.index')
+            $nameAttr = $user->getAttribute('name');
+            $userName = is_string($nameAttr) ? $nameAttr : '';
+
+            return to_route('internal.admin.users.index')
                 ->with(
                     'success',
-                    "Usuario '{$user->name}' actualizado exitosamente."
+                    sprintf("Usuario '%s' actualizado exitosamente.", $userName)
                 );
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             // Loguear el error para análisis posterior
             Log::error(
-                'Error al actualizar usuario: '.$e->getMessage(),
+                'Error al actualizar usuario: '.$exception->getMessage(),
                 [
                     'user_id' => $id,
                     'data' => $request->except([
                         'password',
                         'password_confirmation',
                     ]),
-                    'trace' => $e->getTraceAsString(),
+                    'trace' => $exception->getTraceAsString(),
                 ]
             );
 
             // Mensaje de error amigable para el usuario
-            return redirect()->back()
+            return back()
                 ->withInput($request->except([
                     'password',
                     'password_confirmation',
@@ -133,8 +141,8 @@ final class EditController extends AdminBaseController
             // Obtener el usuario para verificar si tiene roles protegidos
             $user = $this->staffUserManager->getUserById($id);
 
-            if (! $user) {
-                return redirect()->route('internal.admin.users.index')
+            if (! $user instanceof \App\Models\StaffUsers) {
+                return to_route('internal.admin.users.index')
                     ->with(
                         'error',
                         'Usuario no encontrado. No se pudo realizar la eliminación.'
@@ -142,16 +150,13 @@ final class EditController extends AdminBaseController
             }
 
             // Verificar si el usuario tiene roles protegidos
-            $hasProtectedRole = $user->roles->contains(function ($role) {
-                return in_array(
-                    mb_strtoupper($role->name),
-                    ['ADMIN', 'DEV'],
-                    true
-                );
-            });
+            $hasProtectedRole = $user->roles
+                ->pluck('name')
+                ->contains(static fn ($name): bool => is_string($name)
+                    && in_array(mb_strtoupper($name), ['ADMIN', 'DEV'], true));
 
             if ($hasProtectedRole) {
-                return redirect()->route('internal.admin.users.index')
+                return to_route('internal.admin.users.index')
                     ->with(
                         'error',
                         'No se puede eliminar un usuario con roles protegidos (ADMIN o DEV).'
@@ -162,29 +167,32 @@ final class EditController extends AdminBaseController
             $deleted = $this->staffUserManager->deleteUser($id);
 
             if ($deleted) {
-                return redirect()->route('internal.admin.users.index')
+                $nameAttr = $user->getAttribute('name');
+                $userName = is_string($nameAttr) ? $nameAttr : '';
+
+                return to_route('internal.admin.users.index')
                     ->with(
                         'success',
-                        "Usuario '{$user->name}' eliminado exitosamente."
+                        sprintf("Usuario '%s' eliminado exitosamente.", $userName)
                     );
             }
 
-            return redirect()->route('internal.admin.users.index')
+            return to_route('internal.admin.users.index')
                 ->with(
                     'error',
                     'No se pudo eliminar el usuario. Intente nuevamente.'
                 );
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             // Loguear el error para análisis posterior
             Log::error(
-                'Error al eliminar usuario: '.$e->getMessage(),
+                'Error al eliminar usuario: '.$exception->getMessage(),
                 [
                     'user_id' => $id,
-                    'trace' => $e->getTraceAsString(),
+                    'trace' => $exception->getTraceAsString(),
                 ]
             );
 
-            return redirect()->route('internal.admin.users.index')
+            return to_route('internal.admin.users.index')
                 ->with(
                     'error',
                     'Ocurrió un error al eliminar el usuario. Por favor, inténtalo nuevamente.'

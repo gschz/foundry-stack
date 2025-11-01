@@ -12,15 +12,9 @@ use Modules\Module02\App\Services\Module02StatsService;
 
 final class Module02ServiceProvider extends ServiceProvider
 {
-    /**
-     * @var string
-     */
-    protected $moduleName = 'Module02';
+    private string $moduleName = 'Module02';
 
-    /**
-     * @var string
-     */
-    protected $moduleNameLower = 'module02';
+    private string $moduleNameLower = 'module02';
 
     /**
      * Register services.
@@ -49,7 +43,7 @@ final class Module02ServiceProvider extends ServiceProvider
     /**
      * Register configs.
      */
-    protected function registerConfig(): void
+    private function registerConfig(): void
     {
         $this->publishes([
             module_path($this->moduleName, 'config/config.php') => config_path($this->moduleNameLower.'.php'),

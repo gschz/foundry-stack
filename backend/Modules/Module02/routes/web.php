@@ -27,7 +27,7 @@ Route::middleware([
     'throttle:60,1',
     'permission:access-module-02,staff',
 ])->prefix('internal/module-02')->name('internal.module02.')->group(
-    function () {
+    function (): void {
         /**
          * Muestra el panel principal del Módulo 02.
          * URL: /internal/module-02

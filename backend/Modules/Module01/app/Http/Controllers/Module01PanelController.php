@@ -22,16 +22,15 @@ final class Module01PanelController extends Module01BaseController
      * Implementación concreta para obtener estadísticas del módulo.
      * Devuelve un array de EnhancedStat consumible por el frontend.
      *
-     * @return array<int, EnhancedStat>|null
+     * @return EnhancedStat[]
      */
-    protected function getModuleStats(): ?array
+    protected function getModuleStats(): array
     {
         $user = $this->getAuthenticatedUser();
-        $stats = $this->statsService->getPanelStats(
+
+        return $this->statsService->getPanelStats(
             $this->getModuleSlug(),
             $user
         );
-
-        return is_array($stats) ? $stats : [];
     }
 }

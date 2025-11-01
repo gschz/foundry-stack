@@ -50,24 +50,36 @@ final class CreateController extends AdminBaseController
     {
         try {
             $validatedData = $request->validated();
-            $validatedData['password'] = bcrypt($validatedData['password']);
+            /** @var mixed $rawPassword */
+            $rawPassword = $validatedData['password'] ?? null;
+            // Asegurar que la contraseña sea string antes de encriptar
+            $validatedData['password'] = is_string($rawPassword)
+                ? bcrypt($rawPassword)
+                : '';
             // Registrar fecha de establecimiento inicial de la contraseña
             $validatedData['password_changed_at'] = now();
             $user = $this->staffUserManager->createUser($validatedData);
 
             if ($request->has('roles')) {
-                $this->staffUserManager->syncRoles(
-                    $user,
-                    $request->input('roles', [])
-                );
+                /** @var array<mixed> $incomingRoles */
+                $incomingRoles = (array) $request->input('roles', []);
+                /** @var array<int, string|int> $filteredRoles */
+                $filteredRoles = array_values(array_filter(
+                    $incomingRoles,
+                    static fn ($r): bool => is_string($r) || is_int($r)
+                ));
+
+                $this->staffUserManager->syncRoles($user, $filteredRoles);
             }
 
             // Si es una solicitud de Inertia, devolver una respuesta Inertia en lugar de redireccionar
             if ($request->header('X-Inertia')) {
                 // Actualizar la sesión flash manualmente
+                $nameAttr = $user->getAttribute('name');
+                $userName = is_string($nameAttr) ? $nameAttr : '';
                 session()->flash(
                     'success',
-                    "Usuario '{$user->name}' creado exitosamente."
+                    sprintf("Usuario '%s' creado exitosamente.", $userName)
                 );
 
                 // Obtener todos los roles para el formulario
@@ -89,18 +101,21 @@ final class CreateController extends AdminBaseController
             }
 
             // Para solicitudes normales, redirigir como antes
-            return redirect()->route('internal.admin.users.index')
+            $nameAttr = $user->getAttribute('name');
+            $userName = is_string($nameAttr) ? $nameAttr : '';
+
+            return to_route('internal.admin.users.index')
                 ->with(
                     'success',
-                    "Usuario '{$user->name}' creado exitosamente."
+                    sprintf("Usuario '%s' creado exitosamente.", $userName)
                 );
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             // Loguear el error para análisis posterior
             Log::error(
-                'Error al crear usuario: '.$e->getMessage(),
+                'Error al crear usuario: '.$exception->getMessage(),
                 [
                     'data' => $request->except(['password', 'password_confirmation']),
-                    'trace' => $e->getTraceAsString(),
+                    'trace' => $exception->getTraceAsString(),
                 ]
             );
 
@@ -131,7 +146,7 @@ final class CreateController extends AdminBaseController
             }
 
             // Mensaje de error amigable para el usuario en solicitudes normales
-            return redirect()->back()
+            return back()
                 ->withInput(
                     $request->except(['password', 'password_confirmation'])
                 )

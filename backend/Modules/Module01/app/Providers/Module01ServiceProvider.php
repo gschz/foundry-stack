@@ -16,15 +16,9 @@ use Modules\Module01\App\Services\Module01StatsService;
  */
 final class Module01ServiceProvider extends ServiceProvider
 {
-    /**
-     * @var string
-     */
-    protected $moduleName = 'Module01';
+    private string $moduleName = 'Module01';
 
-    /**
-     * @var string
-     */
-    protected $moduleNameLower = 'module01';
+    private string $moduleNameLower = 'module01';
 
     /**
      * Registra servicios, bindings y comandos del módulo.
@@ -51,7 +45,7 @@ final class Module01ServiceProvider extends ServiceProvider
     /**
      * Registra la configuración del módulo.
      */
-    protected function registerConfig(): void
+    private function registerConfig(): void
     {
         $this->publishes([
             module_path($this->moduleName, 'config/config.php') => config_path($this->moduleNameLower.'.php'),

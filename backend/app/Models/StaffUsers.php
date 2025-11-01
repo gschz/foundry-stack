@@ -35,7 +35,10 @@ final class StaffUsers extends Authenticatable implements AuthenticatableUser, M
 {
     use CrossGuardPermissions;
     use HasApiTokens;
+
+    /** @use HasFactory<\Database\Factories\StaffUsersFactory> */
     use HasFactory;
+
     use HasRoles;
     use LogsActivity;
     use Notifiable;
