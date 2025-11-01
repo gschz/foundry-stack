@@ -1,14 +1,14 @@
 # laravel-react-modular-stack
 
-Base modular y neutral en Laravel 12 + React/TypeScript con Inertia y Vite. Incluye navegación contextual, filtrado de rutas con Ziggy, soporte opcional para PostgreSQL JSONB (compatible con SQLite en desarrollo), monorepo con linters/formatters, y orquestación de entornos locales y Docker/Nginx.
+Base modular en Laravel 12 + React/TypeScript con Inertia y Vite. Incluye navegación contextual, filtrado de rutas con Ziggy, soporte opcional para PostgreSQL JSONB (compatible con SQLite en desarrollo), monorepo con linters/formatters, y orquestación de entornos locales y Docker/Nginx.
 
 ## Características clave
 
 - Arquitectura modular en backend (Laravel) y frontend (React/TypeScript + Vite).
 - Navegación contextual y renderizado dinámico en el frontend.
 - Filtrado de rutas con Ziggy para exponer solo lo necesario al cliente.
-- Soporte para PostgreSQL con JSONB (compatible con SQLite en desarrollo).
-- Monorepo con tooling unificado (Pint, Prettier, ESLint, Vite).
+- Soporte para PostgreSQL con JSONB.
+- Monorepo con tooling unificado (Pint, Prettier, ESLint, PHPStan, Rector, Pest).
 
 ## Requisitos
 
@@ -17,19 +17,6 @@ Base modular y neutral en Laravel 12 + React/TypeScript con Inertia y Vite. Incl
 - PostgreSQL (opcional)
 - Docker (opcional)
 - Git
-
-> Nota: Puedes usar el instalador compilado `dist/quick-install.exe` sin Bun para la instalación inicial, pero para el desarrollo y los scripts del proyecto necesitarás tener Bun instalado.
-
-## Arquitectura (resumen)
-
-- Modular (backend)
-  - backend/Modules/\* separa capacidades en dominios independientes, registrables y testeables.
-- Navegación contextual (frontend)
-  - Configuración centralizada para construir menús/vistas según contexto.
-- Filtrado de rutas (Ziggy)
-  - Solo se exponen al cliente las rutas whitelisteadas y necesarias.
-- Datos flexibles (JSONB)
-  - Uso de columnas json/jsonb con índices GIN en PostgreSQL cuando aplica.
 
 ---
 
@@ -57,7 +44,7 @@ Este modo es ideal para trabajar rápidamente en el frontend o en tareas del bac
 > **Configurar la base de datos y la aplicación**:
 >
 > ```bash
-> bun run migrate:fresh --seed
+> bun run migrate:fresh:seed
 > ```
 >
 > **¡Iniciar el entorno de desarrollo!**
@@ -145,22 +132,12 @@ La forma más fácil de comenzar con el proyecto es usando el script de instalac
 
 > ```bash
 > # 1. Clonar el repositorio
-> git clone https://github.com/hkxdv/laravel-react-modular-stack.git my-project
-> cd my-project
+> git clone https://github.com/hkxdv/laravel-react-modular-stack.git my-project && cd my-project
+> ||
+> bunx degit hkxdv/laravel-react-modular-stack my-project && cd my-project
 >
 > # 2. Ejecutar instalación rápida
 > bun run quick-install
-> ```
-
-Si no deseas instalar Bun solo para la instalación inicial, puedes usar el binario distribuible:
-
-> ```powershell
-> # 1. Clonar el repositorio
-> git clone https://github.com/hkxdv/laravel-react-modular-stack.git my-project
-> cd my-project
->
-> # 2. Descargar y ejecutar el instalador compilado (Windows)
-> Invoke-WebRequest -Uri "https://github.com/hkxdv/laravel-react-modular-stack/releases/download/v0.1.0/quick-install.exe" -OutFile quick-install.exe && .\quick-install.exe
 > ```
 
 Después de la instalación inicial, Bun seguirá siendo necesario para comandos de desarrollo (`bun dev`, seeds, Ziggy, etc.).
@@ -273,7 +250,6 @@ El proyecto utiliza diferentes archivos de entorno según el modo de desarrollo:
   - Autorización y registro: spatie/laravel-permission, spatie/laravel-activitylog
   - Datos/DTO: spatie/laravel-data
   - Ruteo cliente: tightenco/ziggy
-  - Búsqueda: typesense/typesense-php
   - Dev: laravel/telescope, laravel/pint, laravel/pail, phpunit
 
 - Variables de entorno clave
