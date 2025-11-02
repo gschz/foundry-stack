@@ -1,8 +1,32 @@
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react';
 import * as React from 'react';
-import { DayPicker } from 'react-day-picker';
+import { type ChevronProps, DayPicker } from 'react-day-picker';
+
+/**
+ * Chevron personalizado que sustituye los íconos por defecto de `react-day-picker`
+ * por los íconos de Lucide React, manteniendo la misma API de props.
+ */
+function CustomChevron({
+  orientation = 'right',
+  className,
+  size = 24,
+  ...rest
+}: Readonly<ChevronProps>) {
+  const iconMap = {
+    left: ChevronLeft,
+    right: ChevronRight,
+    up: ChevronUp,
+    down: ChevronDown,
+  } as const;
+
+  const IconComponent = iconMap[orientation];
+
+  return (
+    <IconComponent aria-hidden="true" width={size} height={size} className={className} {...rest} />
+  );
+}
 
 function Calendar({
   className,
@@ -54,12 +78,8 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ className, ...props }) => (
-          <ChevronLeft className={cn('size-4', className)} {...props} />
-        ),
-        IconRight: ({ className, ...props }) => (
-          <ChevronRight className={cn('size-4', className)} {...props} />
-        ),
+        Chevron: CustomChevron,
+        ...props.components,
       }}
       {...props}
     />

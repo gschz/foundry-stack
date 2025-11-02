@@ -78,12 +78,12 @@ const normalizePaginated = <T,>(
   }
 
   // Si ya tiene la estructura correcta (meta anidado), retornar tal cual
-  if ('meta' in input && input.meta) {
+  if ('meta' in input) {
     return input;
   }
 
   // Si es la respuesta estándar de Laravel (propiedades planas), transformarla
-  const laravelResponse = input as LaravelPaginatedResponse<T>;
+  const laravelResponse = input;
   if ('current_page' in laravelResponse && Array.isArray(laravelResponse.data)) {
     const meta: PaginatedMeta = {
       current_page: laravelResponse.current_page,
@@ -137,12 +137,21 @@ const normalizeFilters = (
 
   // Si es un objeto, asegurar que las propiedades sean strings o undefined
   const f = filters as Record<string, unknown>;
-  return {
-    search: typeof f['search'] === 'string' ? f['search'] : undefined,
-    role: typeof f['role'] === 'string' ? f['role'] : undefined,
-    sort_field: typeof f['sort_field'] === 'string' ? f['sort_field'] : undefined,
-    sort_direction: typeof f['sort_direction'] === 'string' ? f['sort_direction'] : undefined,
-  };
+  const result: { search?: string; role?: string; sort_field?: string; sort_direction?: string } =
+    {};
+  if (typeof f['search'] === 'string') {
+    result.search = f['search'];
+  }
+  if (typeof f['role'] === 'string') {
+    result.role = f['role'];
+  }
+  if (typeof f['sort_field'] === 'string') {
+    result.sort_field = f['sort_field'];
+  }
+  if (typeof f['sort_direction'] === 'string') {
+    result.sort_direction = f['sort_direction'];
+  }
+  return result;
 };
 
 export default function UserListPage({
@@ -219,7 +228,7 @@ export default function UserListPage({
         accessorKey: 'name',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre" />,
         cell: ({ row }) => {
-          const isCurrentUser = auth.user && row.original.id === auth.user.data.id;
+          const isCurrentUser = row.original.id === auth.user?.data.id;
           return (
             <div className="flex items-center space-x-2">
               <User className="text-muted-foreground h-4 w-4" />
