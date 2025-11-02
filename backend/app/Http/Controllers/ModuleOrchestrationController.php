@@ -162,7 +162,7 @@ abstract class ModuleOrchestrationController extends Controller
 
         if (is_array($perm)) {
             // Normalizar a lista de strings
-            return array_values(array_filter($perm, 'is_string'));
+            return array_values(array_filter($perm, is_string(...)));
         }
 
         return '';
@@ -445,11 +445,11 @@ abstract class ModuleOrchestrationController extends Controller
         // Re-normalizar configuraciones tras resolver referencias
         /** @var array<int, array<string, mixed>> $panelItemsConfig */
         $panelItemsConfig = is_array($panelItemsConfig)
-            ? array_values(array_filter($panelItemsConfig, 'is_array'))
+            ? array_values(array_filter($panelItemsConfig, is_array(...)))
             : [];
         /** @var array<int, array<string, mixed>> $contextualNavItemsConfig */
         $contextualNavItemsConfig = is_array($contextualNavItemsConfig)
-            ? array_values(array_filter($contextualNavItemsConfig, 'is_array'))
+            ? array_values(array_filter($contextualNavItemsConfig, is_array(...)))
             : [];
         $functionalName = $this->getFunctionalName();
 

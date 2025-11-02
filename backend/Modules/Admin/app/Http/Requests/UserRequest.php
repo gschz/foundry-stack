@@ -144,9 +144,9 @@ final class UserRequest extends FormRequest
                     $roleNames = array_filter((array) $this->input(
                         'roles',
                         []
-                    ), 'is_string');
+                    ), is_string(...));
                     $requestRoles = array_values(array_map(
-                        static fn (string $val): string => mb_strtoupper($val),
+                        mb_strtoupper(...),
                         $roleNames
                     ));
 

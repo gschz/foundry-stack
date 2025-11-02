@@ -154,7 +154,7 @@ return [
         'http_only' => env('SESSION_HTTP_ONLY', true),
         'same_site' => env('SESSION_SAME_SITE', 'lax'),
         'encrypt' => env('SESSION_ENCRYPT', true),
-        'domain' => env('SESSION_DOMAIN', null),
+        'domain' => env('SESSION_DOMAIN'),
         'path' => env('SESSION_PATH', '/'),
     ],
 

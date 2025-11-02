@@ -108,10 +108,10 @@ final class RouteFilterService
 
         // Normalizar a listas de string
         $publicPatterns = is_array($publicPatterns)
-            ? array_values(array_filter($publicPatterns, 'is_string'))
+            ? array_values(array_filter($publicPatterns, is_string(...)))
             : [];
         $staffPatterns = is_array($staffPatterns)
-            ? array_values(array_filter($staffPatterns, 'is_string'))
+            ? array_values(array_filter($staffPatterns, is_string(...)))
             : [];
 
         // Por defecto, solo patrones públicos

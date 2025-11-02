@@ -64,10 +64,11 @@
     "test:types": "vendor/bin/phpstan analyze --configuration=phpstan.neon --memory-limit=512M",
     "test:type-coverage": "vendor/bin/pest --type-coverage --min=100",
     "lint": [
-      "vendor/bin/rector --dry-run",
+      "vendor/bin/rector --dry-run --clear-cache",
       "vendor/bin/pint --test"
     ],
-    "update:requirements": "composer update -W && bun --cwd ../frontend i && bun --cwd ../frontend run build"
+    "rector:dry": "vendor/bin/rector --dry-run --clear-cache",
+    "rector:fix": "vendor/bin/rector --clear-cache"
   },
   "extra": {
     "laravel": {

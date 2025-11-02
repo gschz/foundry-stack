@@ -38,7 +38,7 @@ trait PermissionVerifier
                     return (bool) $user->hasAnyPermissionCross($permissionName);
                 }
 
-                return array_any($permissionName, fn ($perm): bool => $user->hasPermissionToCross($perm));
+                return array_any($permissionName, $user->hasPermissionToCross(...));
             }
 
             return $user->hasPermissionToCross($permissionName);

@@ -89,7 +89,7 @@ final class AccountUpdatedNotification extends Notification implements ShouldQue
             'Estos cambios se realizaron el '.now()->format('d/m/Y').' a las '.now()->format('H:i:s').'.'
         );
 
-        if ($this->ipAddress !== null && $this->ipAddress !== '' && $this->ipAddress !== '0') {
+        if (! in_array($this->ipAddress, [null, '', '0'], true)) {
             $message->line(
                 sprintf('Cambios realizados desde la dirección IP: %s.', $this->ipAddress)
             );

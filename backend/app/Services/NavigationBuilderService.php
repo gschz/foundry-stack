@@ -95,7 +95,7 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
         $resolvedConfig = array_values(
             array_filter(
                 $resolvedConfig,
-                static fn ($v): bool => is_array($v)
+                is_array(...)
             )
         );
 
@@ -434,9 +434,9 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
                     $routeNameSuffix = isset($config['route_name_suffix']) && is_string($config['route_name_suffix'])
                         ? $config['route_name_suffix']
                         : null;
-                    $routeName = $routeNameSuffix !== null && $routeNameSuffix !== '' && $routeNameSuffix !== '0'
-                        ? sprintf('internal.%s.%s', $moduleSlug, $routeNameSuffix)
-                        : null;
+                    $routeName = in_array($routeNameSuffix, [null, '', '0'], true)
+                        ? null
+                        : sprintf('internal.%s.%s', $moduleSlug, $routeNameSuffix);
                 }
 
                 // Preferir route_params, luego route_parameters (de configs con placeholders)
@@ -954,9 +954,9 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
                     && is_string($config['route_name_suffix'])
                     ? $config['route_name_suffix']
                     : null;
-                $routeName = $routeNameSuffix !== null && $routeNameSuffix !== '' && $routeNameSuffix !== '0'
-                    ? sprintf('internal.%s.%s', $moduleSlug, $routeNameSuffix)
-                    : 'internal.'.$moduleSlug;
+                $routeName = in_array($routeNameSuffix, [null, '', '0'], true)
+                    ? 'internal.'.$moduleSlug
+                    : sprintf('internal.%s.%s', $moduleSlug, $routeNameSuffix);
             }
 
             // Obtener los parámetros de ruta (preferir 'route_params' alias si existe)
