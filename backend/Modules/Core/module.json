@@ -1,0 +1,9 @@
+{
+  "name": "Core",
+  "alias": "core",
+  "priority": 0,
+  "providers": [
+    "Modules\\Core\\App\\Providers\\CoreServiceProvider",
+    "Modules\\Core\\App\\Providers\\RouteServiceProvider"
+  ]
+}
