@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Interfaces;
+namespace Modules\Core\Contracts;
 
-use App\Models\StaffUsers as User;
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUser as User;
 use Nwidart\Modules\Laravel\Module;
 
 /**

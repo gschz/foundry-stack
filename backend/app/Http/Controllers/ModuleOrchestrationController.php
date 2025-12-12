@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Interfaces\ModuleRegistryInterface;
-use App\Interfaces\NavigationBuilderInterface;
-use App\Interfaces\ViewComposerInterface;
 use App\Traits\PermissionVerifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Response as InertiaResponse;
+use Modules\Core\Contracts\ModuleRegistryInterface;
+use Modules\Core\Contracts\NavigationBuilderInterface;
+use Modules\Core\Contracts\ViewComposerInterface;
 use ReflectionClass;
 use Throwable;
 
