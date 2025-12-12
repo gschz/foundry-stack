@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
-use App\Models\StaffUsers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
 
 /**
  * Transforma el modelo StaffUser en un array para respuestas API.
@@ -22,7 +22,7 @@ final class StaffUserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        /** @var StaffUsers $user */
+        /** @var StaffUser $user */
         $user = $this->resource;
 
         return [

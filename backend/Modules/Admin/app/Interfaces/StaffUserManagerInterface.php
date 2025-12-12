@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\Admin\App\Interfaces;
 
-use App\Models\StaffUsers;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -36,7 +36,7 @@ interface StaffUserManagerInterface
      *                                        - sort_direction: Dirección de ordenamiento (asc/desc)
      *                                        - per_page: Número de elementos por página
      * @param  int  $perPage  Número predeterminado de elementos por página
-     * @return LengthAwarePaginator<array-key, StaffUsers> Lista paginada de usuarios
+     * @return LengthAwarePaginator<array-key, StaffUser> Lista paginada de usuarios
      */
     public function getAllUsers(
         array $params = [],
@@ -47,26 +47,26 @@ interface StaffUserManagerInterface
      * Crea un nuevo usuario con los datos proporcionados.
      *
      * @param  array<string, mixed>  $data  Datos del nuevo usuario (name, email, password, etc.)
-     * @return StaffUsers Usuario creado
+     * @return StaffUser Usuario creado
      */
-    public function createUser(array $data): StaffUsers;
+    public function createUser(array $data): StaffUser;
 
     /**
      * Obtiene un usuario por su ID.
      *
      * @param  int  $id  ID del usuario
-     * @return StaffUsers|null Usuario encontrado o null
+     * @return StaffUser|null Usuario encontrado o null
      */
-    public function getUserById(int $id): ?StaffUsers;
+    public function getUserById(int $id): ?StaffUser;
 
     /**
      * Actualiza un usuario existente.
      *
      * @param  int  $id  ID del usuario
      * @param  array<string, mixed>  $data  Datos actualizados (name, email, etc.)
-     * @return StaffUsers|null Usuario actualizado o null
+     * @return StaffUser|null Usuario actualizado o null
      */
-    public function updateUser(int $id, array $data): ?StaffUsers;
+    public function updateUser(int $id, array $data): ?StaffUser;
 
     /**
      * Elimina un usuario por su ID.
@@ -80,10 +80,10 @@ interface StaffUserManagerInterface
      * Sincroniza los roles de un usuario, preservando los roles protegidos.
      * Los roles protegidos (ADMIN y DEV) no pueden ser eliminados si ya están asignados.
      *
-     * @param  StaffUsers  $user  Usuario a actualizar
+     * @param  StaffUser  $user  Usuario a actualizar
      * @param  array<string|int|Role>  $roles  Roles a asignar, pueden ser nombres de rol, IDs o instancias de Role
      */
-    public function syncRoles(StaffUsers $user, array $roles): void;
+    public function syncRoles(StaffUser $user, array $roles): void;
 
     /**
      * Obtiene el número total de usuarios registrados.

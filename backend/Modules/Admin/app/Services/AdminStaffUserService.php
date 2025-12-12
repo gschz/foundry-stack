@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\Admin\App\Services;
 
-use App\Models\StaffUsers;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Modules\Admin\App\Interfaces\StaffUserManagerInterface;
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Servicio para manejar la lógica de negocio de la gestión de usuarios del personal (Staff).
@@ -21,13 +23,13 @@ final class AdminStaffUserService implements StaffUserManagerInterface
      *
      * @param  array<string, mixed>  $params  Parámetros para filtrado y ordenación
      * @param  int  $perPage  Número de elementos por página
-     * @return LengthAwarePaginator<array-key, StaffUsers>
+     * @return LengthAwarePaginator<array-key, StaffUser>
      */
     public function getAllUsers(
         array $params = [],
         int $perPage = 10
     ): LengthAwarePaginator {
-        $query = StaffUsers::query()
+        $query = StaffUser::query()
             // Eliminamos 'avatar' del select porque es un atributo computado
             ->select('id', 'name', 'email', 'created_at', 'updated_at')
             // Ya no existe la relación contactProfile
@@ -78,9 +80,9 @@ final class AdminStaffUserService implements StaffUserManagerInterface
      * Crea un nuevo usuario con los datos proporcionados.
      *
      * @param  array<string, mixed>  $data  Datos del nuevo usuario
-     * @return StaffUsers Usuario creado
+     * @return StaffUser Usuario creado
      */
-    public function createUser(array $data): StaffUsers
+    public function createUser(array $data): StaffUser
     {
         // Determinar si se debe verificar automáticamente el email (por defecto: true)
         $shouldAutoVerify = ! isset($data['auto_verify_email'])
@@ -96,7 +98,7 @@ final class AdminStaffUserService implements StaffUserManagerInterface
         }
 
         // Crear el usuario con los datos proporcionados
-        $user = StaffUsers::query()->create($data);
+        $user = StaffUser::query()->create($data);
         // Inicializar fecha de establecimiento de contraseña
         $user->forceFill([
             'password_changed_at' => now(),
@@ -107,9 +109,11 @@ final class AdminStaffUserService implements StaffUserManagerInterface
             $user->sendEmailVerificationNotification();
         }
 
-        // Si se proporcionaron roles, sincronizarlos
-        if (isset($data['roles']) && is_array($data['roles'])) {
-            $this->syncRoles($user, $data['roles']);
+        // Asignar roles si se proporcionan
+        if (! empty($data['roles']) && is_array($data['roles'])) {
+            /** @var array<int, string|int|Role> $roles */
+            $roles = $data['roles'];
+            $this->syncRoles($user, $roles);
         }
 
         return $user;
@@ -119,11 +123,11 @@ final class AdminStaffUserService implements StaffUserManagerInterface
      * Obtiene un usuario por su ID.
      *
      * @param  int  $id  ID del usuario
-     * @return StaffUsers|null Usuario encontrado o null
+     * @return StaffUser|null Usuario encontrado o null
      */
-    public function getUserById(int $id): ?StaffUsers
+    public function getUserById(int $id): ?StaffUser
     {
-        return StaffUsers::with('roles', 'permissions')->find($id);
+        return StaffUser::with('roles', 'permissions')->find($id);
     }
 
     /**
@@ -131,11 +135,11 @@ final class AdminStaffUserService implements StaffUserManagerInterface
      *
      * @param  int  $id  ID del usuario
      * @param  array<string, mixed>  $data  Datos actualizados
-     * @return StaffUsers|null Usuario actualizado o null
+     * @return StaffUser|null Usuario actualizado o null
      */
-    public function updateUser(int $id, array $data): ?StaffUsers
+    public function updateUser(int $id, array $data): ?StaffUser
     {
-        $user = StaffUsers::query()->find($id);
+        $user = StaffUser::query()->find($id);
         if ($user) {
             // Extraer password_changed_at si viene en payload y evitar mass assignment
             $pwdChangedAt = $data['password_changed_at'] ?? null;
@@ -163,7 +167,7 @@ final class AdminStaffUserService implements StaffUserManagerInterface
      */
     public function deleteUser(int $id): bool
     {
-        $user = StaffUsers::query()->find($id);
+        $user = StaffUser::query()->find($id);
         if ($user) {
             return (bool) $user->delete();
         }
@@ -173,12 +177,11 @@ final class AdminStaffUserService implements StaffUserManagerInterface
 
     /**
      * Sincroniza los roles de un usuario, preservando los roles protegidos.
-     * Los roles protegidos (ADMIN y DEV) no pueden ser eliminados si ya están asignados.
      *
-     * @param  StaffUsers  $user  Usuario a actualizar
-     * @param  array<mixed>  $roles  Roles a asignar
+     * @param  StaffUser  $user  Usuario a actualizar
+     * @param  array<int, string|int|Role>  $roles  Roles a asignar
      */
-    public function syncRoles(StaffUsers $user, array $roles): void
+    public function syncRoles(StaffUser $user, array $roles): void
     {
         // 1. Filtrar los roles 'ADMIN' y 'DEV' de la solicitud.
         // Normaliza roles a nombres o IDs y filtra ADMIN/DEV
@@ -193,15 +196,13 @@ final class AdminStaffUserService implements StaffUserManagerInterface
                 // En este punto, por el filtro previo, $role es Role
                 return $role->name; // usar nombre para evitar colisiones
             },
-            array_filter(
-                $roles,
-                static fn ($role): bool => is_string($role) || is_int($role) || $role instanceof Role
-            )
-        ), static fn (string|int $roleName): bool => $roleName !== '' && ! in_array(
-            mb_strtoupper((string) $roleName),
-            ['ADMIN', 'DEV'],
-            true
-        )));
+            $roles
+        ), static fn (string|int $roleName): bool => (string) $roleName !== '' &&
+            ! in_array(
+                mb_strtoupper((string) $roleName),
+                ['ADMIN', 'DEV'],
+                true
+            )));
 
         // 2. Obtener los nombres de roles protegidos que el usuario ya tiene.
         /** @var array<int, string> $protectedRoles */
@@ -223,6 +224,20 @@ final class AdminStaffUserService implements StaffUserManagerInterface
         ));
 
         $user->syncRoles($finalRoles);
+
+        $registrar = app()->make(PermissionRegistrar::class);
+        $registrar->forgetCachedPermissions();
+
+        $rawVersion = Cache::get('user.'.$user->id.'.perm_version', 0);
+        $currentVersion = is_int($rawVersion)
+            ? $rawVersion
+            : (is_numeric($rawVersion) ? (int) $rawVersion : 0);
+
+        Cache::put(
+            'user.'.$user->id.'.perm_version',
+            $currentVersion + 1,
+            now()->addDays(7)
+        );
     }
 
     /**
@@ -232,7 +247,7 @@ final class AdminStaffUserService implements StaffUserManagerInterface
      */
     public function getTotalUsers(): int
     {
-        return StaffUsers::query()->count();
+        return StaffUser::query()->count();
     }
 
     /**

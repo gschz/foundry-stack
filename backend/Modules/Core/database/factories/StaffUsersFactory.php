@@ -2,32 +2,32 @@
 
 declare(strict_types=1);
 
-namespace Database\Factories;
+namespace Modules\Core\Database\Factories;
 
-use App\Models\StaffUsers;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\StaffUsers>
+ * @extends Factory<StaffUser>
  */
 final class StaffUsersFactory extends Factory
 {
     /**
      * El nombre del modelo correspondiente de la factoría.
      *
-     * @var class-string<StaffUsers>
+     * @var class-string<StaffUser>
      */
-    protected $model = StaffUsers::class;
+    protected $model = StaffUser::class;
 
     /**
-     * The current password being used by the factory.
+     * La contraseña actual que está usando la factoría.
      */
     private static string $password = '';
 
     /**
-     * Define the model's default state.
+     * Define el estado predeterminado del modelo.
      *
      * @return array<string, mixed>
      */
@@ -45,7 +45,7 @@ final class StaffUsersFactory extends Factory
     }
 
     /**
-     * Indicate that the model's email address should be unverified.
+     * Indica que la dirección de correo electrónico del modelo debe estar sin verificar.
      */
     public function unverified(): static
     {
@@ -59,7 +59,7 @@ final class StaffUsersFactory extends Factory
      */
     public function configure(): static
     {
-        return $this->afterCreating(function (StaffUsers $user): void {
+        return $this->afterCreating(function (StaffUser $user): void {
             $user->forceFill([
                 'password_changed_at' => now(),
                 'last_activity' => now(),

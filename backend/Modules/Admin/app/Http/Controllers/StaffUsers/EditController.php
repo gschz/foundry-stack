@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Inertia\Response as InertiaResponse;
 use Modules\Admin\App\Http\Controllers\AdminBaseController;
 use Modules\Admin\App\Http\Requests\UserRequest;
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
 
 /**
  * Controlador para la edición de usuarios del personal administrativo.
@@ -29,7 +30,7 @@ final class EditController extends AdminBaseController
         // Obtener el usuario por ID con sus roles
         $user = $this->staffUserManager->getUserById($id);
 
-        abort_unless($user instanceof \App\Models\StaffUsers, 404, 'Usuario no encontrado');
+        abort_unless($user instanceof StaffUser, 404, 'Usuario no encontrado');
 
         // Obtener todos los roles disponibles
         $roles = $this->staffUserManager->getAllRoles();
@@ -59,7 +60,7 @@ final class EditController extends AdminBaseController
         try {
             $user = $this->staffUserManager->getUserById($id);
 
-            if (! $user instanceof \App\Models\StaffUsers) {
+            if (! $user instanceof StaffUser) {
                 return to_route('internal.admin.users.index')
                     ->with(
                         'error',
@@ -141,7 +142,7 @@ final class EditController extends AdminBaseController
             // Obtener el usuario para verificar si tiene roles protegidos
             $user = $this->staffUserManager->getUserById($id);
 
-            if (! $user instanceof \App\Models\StaffUsers) {
+            if (! $user instanceof StaffUser) {
                 return to_route('internal.admin.users.index')
                     ->with(
                         'error',

@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace Modules\Core\Infrastructure\Eloquent\Models;
 
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUsersLoginInfo as StaffUsersLoginInfoModel;
 
 /**
  * Modelo que almacena el historial de inicios de sesión del personal (Staff).
@@ -26,20 +28,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $is_trusted Indica si el dispositivo es de confianza.
  * @property \Carbon\CarbonInterface|null $last_login_at Fecha y hora del último inicio de sesión.
  * @property int $login_count Contador de inicios de sesión desde este dispositivo.
- * @property-read StaffUsers $staffUser
+ * @property-read StaffUser $staffUser
  *
- * @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<\App\Models\StaffUsersLoginInfo>>
+ * @use HasFactory<Factory<StaffUsersLoginInfoModel>>
  */
 final class StaffUsersLoginInfo extends Model
 {
-    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<\App\Models\StaffUsersLoginInfo>> */
+    /** @use HasFactory<Factory<StaffUsersLoginInfoModel>> */
     use HasFactory;
 
     /**
      * Umbral de similitud para la comparación de agentes de usuario.
      * Se usa para tolerar variaciones menores en las versiones de los navegadores.
      */
-    private const int USER_AGENT_SIMILARITY_THRESHOLD = 80;
+    protected const int USER_AGENT_SIMILARITY_THRESHOLD = 80;
 
     /**
      * El nombre de la tabla asociada con el modelo.
@@ -81,11 +83,11 @@ final class StaffUsersLoginInfo extends Model
     /**
      * Define la relación con el usuario de personal al que pertenece esta información.
      *
-     * @return BelongsTo<StaffUsers, $this>
+     * @return BelongsTo<StaffUser, $this>
      */
     public function staffUser(): BelongsTo
     {
-        return $this->belongsTo(StaffUsers::class, 'staff_user_id');
+        return $this->belongsTo(StaffUser::class, 'staff_user_id');
     }
 
     /**
@@ -99,54 +101,21 @@ final class StaffUsersLoginInfo extends Model
      */
     public function matches(?string $ip, ?string $userAgent): bool
     {
-        if ($this->ip_address !== $ip) {
+        if ($ip !== $this->ip_address) {
             return false;
         }
 
-        if ($this->user_agent === $userAgent) {
+        if ($userAgent === $this->user_agent) {
             return true;
         }
 
-        if (in_array($userAgent, [null, '', '0'], true) || ! $this->user_agent) {
+        // Si el user agent es nulo en cualquiera de los dos, no coincide
+        if ($userAgent === null || $this->user_agent === null) {
             return false;
         }
 
         similar_text($userAgent, $this->user_agent, $percent);
 
-        return $percent > self::USER_AGENT_SIMILARITY_THRESHOLD;
-    }
-
-    /**
-     * Actualiza los datos del último inicio de sesión y el contador.
-     * Este método guarda los cambios en la base de datos.
-     */
-    public function updateLastLogin(): void
-    {
-        $this->last_login_at = now();
-        $this->increment('login_count');
-        $this->save();
-    }
-
-    /**
-     * ACCESOR DE COMPATIBILIDAD: Obtiene el `staff_user_id`.
-     *
-     * Este accesor existe para mantener la compatibilidad con partes del código
-     * que podrían referirse incorrectamente a `staff_users_id` (en plural).
-     * El nombre correcto de la columna es `staff_user_id`.
-     */
-    protected function getStaffUsersIdAttribute(): int
-    {
-        return $this->staff_user_id;
-    }
-
-    /**
-     * MUTADOR DE COMPATIBILIDAD: Establece el `staff_user_id`.
-     *
-     * Este mutador permite asignar el ID de usuario utilizando el alias incorrecto
-     * `staff_users_id` por razones de compatibilidad.
-     */
-    protected function setStaffUsersIdAttribute(int $value): void
-    {
-        $this->attributes['staff_user_id'] = $value;
+        return $percent >= self::USER_AGENT_SIMILARITY_THRESHOLD;
     }
 }
