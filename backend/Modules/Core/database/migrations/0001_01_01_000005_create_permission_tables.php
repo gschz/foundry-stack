@@ -19,12 +19,16 @@ return new class extends Migration
         /** @var array<string, mixed>|null $columnNames */
         $columnNames = config('permission.column_names');
 
-        throw_unless(is_array($tableNames),
-        Exception::class,
-        'Error: config/permission.php not loaded. Run [php artisan config:clear] and try again.');
-        throw_unless(is_array($columnNames),
-        Exception::class,
-        'Error: config/permission.php not loaded. Run [php artisan config:clear] and try again.');
+        throw_unless(
+            is_array($tableNames),
+            Exception::class,
+            'Error: config/permission.php not loaded. Run [php artisan config:clear] and try again.'
+        );
+        throw_unless(
+            is_array($columnNames),
+            Exception::class,
+            'Error: config/permission.php not loaded. Run [php artisan config:clear] and try again.'
+        );
 
         $pivotRole = is_string(
             $columnNames['role_pivot_key'] ?? null
@@ -34,11 +38,13 @@ return new class extends Migration
             $columnNames['permission_pivot_key'] ?? null
         ) ? $columnNames['permission_pivot_key'] : 'permission_id';
 
-        throw_if($teams && ! is_string(
-            $columnNames['team_foreign_key'] ?? null
-        ),
-        Exception::class,
-        'Error: team_foreign_key on config/permission.php not loaded. Run [php artisan config:clear] and try again.');
+        throw_if(
+            $teams && ! is_string(
+                $columnNames['team_foreign_key'] ?? null
+            ),
+            Exception::class,
+            'Error: team_foreign_key on config/permission.php not loaded. Run [php artisan config:clear] and try again.'
+        );
 
         $permissionsTable = $tableNames['permissions'] ?? null;
         throw_unless(
@@ -47,6 +53,9 @@ return new class extends Migration
             'Invalid permissions table name'
         );
 
+        /**
+         * Create the permissions table.
+         */
         Schema::create($permissionsTable, static function (
             Blueprint $table
         ): void {
@@ -69,6 +78,9 @@ return new class extends Migration
             'Invalid roles table name'
         );
 
+        /**
+         * Create the roles table.
+         */
         Schema::create($rolesTable, static function (
             Blueprint $table
         ) use ($teams, $columnNames): void {
@@ -114,6 +126,9 @@ return new class extends Migration
             'Invalid model_has_permissions table name'
         );
 
+        /**
+         * Create the model_has_permissions table.
+         */
         Schema::create($modelHasPermissionsTable, static function (
             Blueprint $table
         ) use ($permissionsTable, $columnNames, $pivotPermission, $teams): void {
@@ -128,7 +143,10 @@ return new class extends Migration
             );
             $table->unsignedBigInteger($modelMorphKey);
             $table->index(
-                [$modelMorphKey, 'model_type'],
+                [
+                    $modelMorphKey,
+                    'model_type',
+                ],
                 'model_has_permissions_model_id_model_type_index'
             );
             $table->foreign($pivotPermission)
@@ -150,12 +168,21 @@ return new class extends Migration
                 );
 
                 $table->primary(
-                    [$teamKey, $pivotPermission, $modelMorphKey, 'model_type'],
+                    [
+                        $teamKey,
+                        $pivotPermission,
+                        $modelMorphKey,
+                        'model_type',
+                    ],
                     'model_has_permissions_permission_model_type_primary'
                 );
             } else {
                 $table->primary(
-                    [$pivotPermission, $modelMorphKey, 'model_type'],
+                    [
+                        $pivotPermission,
+                        $modelMorphKey,
+                        'model_type',
+                    ],
                     'model_has_permissions_permission_model_type_primary'
                 );
             }
@@ -169,6 +196,9 @@ return new class extends Migration
             'Invalid model_has_roles table name'
         );
 
+        /**
+         * Create the model_has_roles table.
+         */
         Schema::create($modelHasRolesTable, static function (
             Blueprint $table
         ) use ($rolesTable, $columnNames, $pivotRole, $teams): void {
@@ -183,7 +213,10 @@ return new class extends Migration
             );
             $table->unsignedBigInteger($modelMorphKey);
             $table->index(
-                [$modelMorphKey, 'model_type'],
+                [
+                    $modelMorphKey,
+                    'model_type',
+                ],
                 'model_has_roles_model_id_model_type_index'
             );
             $table->foreign($pivotRole)
@@ -203,12 +236,21 @@ return new class extends Migration
                     'model_has_roles_team_foreign_key_index'
                 );
                 $table->primary(
-                    [$teamKey, $pivotRole, $modelMorphKey, 'model_type'],
+                    [
+                        $teamKey,
+                        $pivotRole,
+                        $modelMorphKey,
+                        'model_type',
+                    ],
                     'model_has_roles_role_model_type_primary'
                 );
             } else {
                 $table->primary(
-                    [$pivotRole, $modelMorphKey, 'model_type'],
+                    [
+                        $pivotRole,
+                        $modelMorphKey,
+                        'model_type',
+                    ],
                     'model_has_roles_role_model_type_primary'
                 );
             }
@@ -221,6 +263,9 @@ return new class extends Migration
             'Invalid role_has_permissions table name'
         );
 
+        /**
+         * Create the role_has_permissions table.
+         */
         Schema::create($roleHasPermissionsTable, static function (
             Blueprint $table
         ) use ($rolesTable, $permissionsTable, $pivotRole, $pivotPermission): void {
@@ -236,7 +281,13 @@ return new class extends Migration
                 ->on($rolesTable)
                 ->onDelete('cascade');
 
-            $table->primary([$pivotPermission, $pivotRole], 'role_has_permissions_permission_id_role_id_primary');
+            $table->primary(
+                [
+                    $pivotPermission,
+                    $pivotRole,
+                ],
+                'role_has_permissions_permission_id_role_id_primary'
+            );
         });
 
         /** @var string|null $cacheStore */
@@ -250,7 +301,8 @@ return new class extends Migration
                     && is_string($cacheStore) ? $cacheStore : null
             )
             ->forget(
-                is_string($cacheKey) ? $cacheKey : 'spatie.permission.cache'
+                is_string($cacheKey)
+                    ? $cacheKey : 'spatie.permission.cache'
             );
     }
 
@@ -289,24 +341,28 @@ return new class extends Migration
             RuntimeException::class,
             'Invalid table name for role_has_permissions'
         );
+
         $modelHasRolesTable = $tableNames['model_has_roles'] ?? null;
         throw_unless(
             is_string($modelHasRolesTable),
             RuntimeException::class,
             'Invalid table name for model_has_roles'
         );
+
         $modelHasPermissionsTable = $tableNames['model_has_permissions'] ?? null;
         throw_unless(
             is_string($modelHasPermissionsTable),
             RuntimeException::class,
             'Invalid table name for model_has_permissions'
         );
+
         $rolesTable = $tableNames['roles'] ?? null;
         throw_unless(
             is_string($rolesTable),
             RuntimeException::class,
             'Invalid table name for roles'
         );
+
         $permissionsTable = $tableNames['permissions'] ?? null;
         throw_unless(
             is_string($permissionsTable),

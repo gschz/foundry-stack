@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Database\Seeders;
+namespace Modules\Core\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Log;
@@ -11,13 +11,10 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * Seeder para crear los roles, permisos y usuarios base del sistema.
+ * Seeder para crear los roles y permisos del sistema.
  */
 final class RolePermissionSeeder extends Seeder
 {
-    /**
-     * Ejecuta el seeder para poblar la base de datos.
-     */
     public function run(): void
     {
         $this->command->info('Iniciando seeder de Roles y Permisos...');
@@ -28,8 +25,6 @@ final class RolePermissionSeeder extends Seeder
         $permissions = [
             'access-module-01',
             'access-module-02',
-            // 'access-module-03',
-            // 'access-module-04',
             'access-admin',
         ];
 
@@ -68,20 +63,8 @@ final class RolePermissionSeeder extends Seeder
             'guard_name' => 'staff',
         ])->givePermissionTo('access-module-02');
 
-        /*
-        Role::firstOrCreate([
-            'name' => 'MOD-03',
-            'guard_name' => 'staff'
-        ])->givePermissionTo('access-module-03');
-
-        Role::firstOrCreate([
-            'name' => 'MOD-04',
-            'guard_name' => 'staff'
-        ])->givePermissionTo('access-module-04');
-        */
-
-        // NOTA: La creación de usuarios ahora es manejada por SystemUsersSeeder
-        // para mejor separación de responsabilidades y flexibilidad.
+        // NOTA: El usuario administrador base (ADMIN) es creado en SystemUsersSeeder
+        // después de que estos roles y permisos han sido establecidos.
 
         // Registrar información en el log
         Log::info('Seeder de roles y permisos ejecutado:', [
@@ -90,6 +73,6 @@ final class RolePermissionSeeder extends Seeder
             'roles' => Role::all(['id', 'name', 'guard_name'])->toArray(),
         ]);
 
-        $this->command->info('Seeder de roles y permisos completado exitosamente.');
+        $this->command->info('Seeder de roles y permisos completado.');
     }
 }
