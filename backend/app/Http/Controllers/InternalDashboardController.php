@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Interfaces\ModuleRegistryInterface;
-use App\Interfaces\NavigationBuilderInterface;
-use App\Interfaces\ViewComposerInterface;
-use App\Models\StaffUsers;
 use App\Traits\PermissionVerifier;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 use Inertia\Response as InertiaResponse;
+use Modules\Core\Contracts\ModuleRegistryInterface;
+use Modules\Core\Contracts\ViewComposerInterface;
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
 
 /**
  * Controlador para el dashboard principal del sistema.
@@ -34,9 +34,8 @@ final class InternalDashboardController extends Controller
      * Constructor del controlador del dashboard.
      */
     public function __construct(
-        private readonly ModuleRegistryInterface $moduleRegistryService,
-        private readonly NavigationBuilderInterface $navigationBuilderService,
-        private readonly ViewComposerInterface $viewComposerService,
+        private readonly ViewComposerInterface $viewComposer,
+        private readonly ModuleRegistryInterface $moduleRegistry
     ) {
         $this->middleware(['auth:staff']);
     }
@@ -50,7 +49,8 @@ final class InternalDashboardController extends Controller
     public function index(Request $request): InertiaResponse
     {
         try {
-            /** @var StaffUsers|null $user */
+            $t0 = microtime(true);
+            /** @var StaffUser|null $user */
             $user = $request->user('staff');
 
             // Verificar que tenemos un usuario autenticado
@@ -91,50 +91,36 @@ final class InternalDashboardController extends Controller
             $this->updateLastActivity($user);
 
             // Obtener los módulos disponibles para el usuario según sus permisos.
-            $availableModules = $this->moduleRegistryService
-                ->getAvailableModulesForUser($user);
-
-            // Asegurar que la colección de módulos sea un array indexado para el frontend.
-            $indexedModules = array_values($availableModules);
-
-            // Construir los ítems de navegación principales usando el servicio
-            $mainNavItems = $this->navigationBuilderService->buildNavItems(
-                $indexedModules,
-                fn (string $permission): bool => $this->can($permission)
-            );
+            $availableModules = $this->moduleRegistry->getAvailableModulesForUser($user);
 
             // Verificar si necesita cambiar contraseña
             $passwordChangeRequired = $this->isPasswordChangeRequired($user);
 
             // Preparar el contexto completo para la vista
-            $viewData = $this->viewComposerService
-                ->composeDashboardViewContext(
-                    user: $user,
-                    availableModules: $indexedModules,
-                    permissionChecker: fn (
-                        string $permission
-                    ): bool => $this->can($permission),
-                    request: $request
-                );
+            $viewData = $this->viewComposer->composeDashboardViewContext(
+                user: $user,
+                availableModules: $availableModules,
+                permissionChecker: fn (string $permission): bool => $this->can($permission),
+                request: $request
+            );
 
             // Agregar información adicional de seguridad
             $viewData = array_merge($viewData, [
                 'passwordChangeRequired' => $passwordChangeRequired,
                 'lastLogin' => $this->getLastLoginInfo($user),
                 'sessionInfo' => $this->getSessionInfo($request),
-                'mainNavItems' => $mainNavItems,
             ]);
 
-            // Log de acceso exitoso
-            Log::info(
-                'Acceso exitoso al dashboard interno',
-                [
-                    'user_id' => $user->getAuthIdentifier(),
-                    'email' => $user->email,
-                    'ip' => $request->ip(),
-                    'user_agent' => $request->userAgent(),
-                ]
-            );
+            $durationMs = (microtime(true) - $t0) * 1000;
+            Log::channel('domain_module_access')->info('dashboard_render', [
+                'user_id' => $user->getAuthIdentifier(),
+                'email' => $user->email,
+                'ip' => $request->ip(),
+                'modules_available_count' => count($availableModules),
+                'main_nav_count' => count((array) ($viewData['mainNavItems'] ?? [])),
+                'password_change_required' => $passwordChangeRequired,
+                'duration_ms' => $durationMs,
+            ]);
 
             // Renderizar la vista del dashboard
             return inertia('internal-dashboard', $viewData);
@@ -196,7 +182,7 @@ final class InternalDashboardController extends Controller
     /**
      * Verificar si el usuario está activo.
      */
-    private function isUserActive(StaffUsers $user): bool
+    private function isUserActive(StaffUser $user): bool
     {
         if (isset($user->active)) {
             return (bool) $user->active;
@@ -212,12 +198,12 @@ final class InternalDashboardController extends Controller
     /**
      * Actualizar la última actividad del usuario.
      */
-    private function updateLastActivity(StaffUsers $user): void
+    private function updateLastActivity(StaffUser $user): void
     {
         try {
             // Solo intentar persistir si la columna existe en la tabla
             if (Schema::hasColumn('staff_users', 'last_activity')) {
-                $now = \Illuminate\Support\Facades\Date::now();
+                $now = Date::now();
                 /** @var \Illuminate\Support\Carbon|null $lastActivity */
                 $lastActivity = $user->getAttribute('last_activity');
 
@@ -248,7 +234,7 @@ final class InternalDashboardController extends Controller
     /**
      * Verificar si se requiere cambio de contraseña.
      */
-    private function isPasswordChangeRequired(StaffUsers $user): bool
+    private function isPasswordChangeRequired(StaffUser $user): bool
     {
         if (! isset($user->password_changed_at)) {
             return false;
@@ -261,8 +247,8 @@ final class InternalDashboardController extends Controller
 
         /** @var \Illuminate\Support\Carbon|string|int|float|null $passwordChangedAt */
         $passwordChangedAt = $user->password_changed_at;
-        $passwordAge = \Illuminate\Support\Facades\Date::parse($passwordChangedAt)
-            ->diffInDays(\Illuminate\Support\Facades\Date::now());
+        $passwordAge = Date::parse($passwordChangedAt)
+            ->diffInDays(Date::now());
 
         return $passwordAge >= $maxAge;
     }
@@ -272,7 +258,7 @@ final class InternalDashboardController extends Controller
      *
      * @return array{datetime: \Carbon\CarbonImmutable, ip: string, user_agent: string}|null
      */
-    private function getLastLoginInfo(StaffUsers $user): ?array
+    private function getLastLoginInfo(StaffUser $user): ?array
     {
         if (! isset($user->last_login_at)) {
             return null;
@@ -282,13 +268,13 @@ final class InternalDashboardController extends Controller
         $lastLoginAt = $user->last_login_at;
 
         return [
-            'datetime' => \Illuminate\Support\Facades\Date::parse($lastLoginAt),
-            'ip' => is_string($user->getAttribute('last_login_ip'))
-                ? $user->getAttribute('last_login_ip')
-                : 'Desconocida',
-            'user_agent' => is_string($user->getAttribute('last_login_user_agent'))
-                ? $user->getAttribute('last_login_user_agent')
-                : 'Desconocido',
+            'datetime' => Date::parse($lastLoginAt),
+            'ip' => is_string(
+                $user->getAttribute('last_login_ip')
+            ) ? $user->getAttribute('last_login_ip') : 'Desconocida',
+            'user_agent' => is_string(
+                $user->getAttribute('last_login_user_agent')
+            ) ? $user->getAttribute('last_login_user_agent') : 'Desconocido',
         ];
     }
 
@@ -308,7 +294,7 @@ final class InternalDashboardController extends Controller
             'ip' => $request->ip(),
             'user_agent' => $request->userAgent(),
             'session_id' => Session::getId(),
-            'started_at' => \Illuminate\Support\Facades\Date::createFromTimestamp($timestamp),
+            'started_at' => Date::createFromTimestamp($timestamp),
         ];
     }
 }
