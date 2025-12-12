@@ -4,15 +4,19 @@ includes:
 
 parameters:
 
+    phpVersion: 80408
+
     paths:
         - app
-        - bootstrap/app.php
+        - bootstrap/
         - config
         - Modules
         - ../database
         - public
         - routes
 
+    excludePaths:
+        - bootstrap/cache/
 
     level: max
 
