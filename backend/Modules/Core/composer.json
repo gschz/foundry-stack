@@ -3,7 +3,7 @@
   "type": "laravel-module",
   "autoload": {
     "psr-4": {
-      "Modules\\Core\\App\\": "app/",
+      "Modules\\Core\\": "src/",
       "Modules\\Core\\Database\\Factories\\": "database/factories/",
       "Modules\\Core\\Database\\Seeders\\": "database/seeders/"
     }
