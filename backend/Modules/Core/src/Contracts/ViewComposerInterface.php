@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Interfaces;
+namespace Modules\Core\Contracts;
 
 use Illuminate\Http\Request;
 use Inertia\Response as InertiaResponse;
@@ -64,8 +64,8 @@ interface ViewComposerInterface
     /**
      * Método específico para preparar datos del dashboard principal.
      *
-     * @param  mixed  $user  Usuario autenticado
-     * @param  array<int, mixed>  $availableModules  Módulos disponibles
+     * @param  \Modules\Core\Infrastructure\Eloquent\Models\StaffUser|null  $user  Usuario autenticado
+     * @param  array<\Nwidart\Modules\Laravel\Module>  $availableModules  Módulos disponibles
      * @param  callable  $permissionChecker  Función para verificar permisos
      * @param  Request  $request  Request actual
      * @return array<string, mixed> Datos para la vista del dashboard
