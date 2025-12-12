@@ -2,19 +2,18 @@
 
 declare(strict_types=1);
 
-namespace App\DTO;
+namespace Modules\Core\Domain\Navigation\DTO;
 
-final class ContextualNavItem
+final class PanelItem
 {
     /**
-     * Valida la configuración de un ítem de navegación contextual.
+     * Valida la configuración de un ítem del panel.
      * Reglas:
-     * - Debe tener 'title' o 'title_template'
+     * - Debe tener 'name' o 'name_template'
      * - Debe tener 'route_name' o 'route_name_suffix'
      * - 'permission' debe ser string|array|null (si es array, todos los elementos deben ser string)
      * - 'icon' opcional string
      * - 'route_params' opcional array
-     * - 'current' opcional bool
      *
      * @param  array<string, mixed>  $config
      * @return array<int, string> Lista de errores; vacío si es válida
@@ -23,17 +22,17 @@ final class ContextualNavItem
     {
         $errors = [];
 
-        // title o title_template
-        $hasTitle = isset($config['title'])
-            && is_string($config['title'])
-            && $config['title'] !== '';
+        // name o name_template
+        $hasName = isset($config['name'])
+            && is_string($config['name'])
+            && $config['name'] !== '';
 
-        $hasTitleTemplate = isset($config['title_template'])
-            && is_string($config['title_template'])
-            && $config['title_template'] !== '';
+        $hasNameTemplate = isset($config['name_template'])
+            && is_string($config['name_template'])
+            && $config['name_template'] !== '';
 
-        if (! $hasTitle && ! $hasTitleTemplate) {
-            $errors[] = "Falta 'title' o 'title_template'";
+        if (! $hasName && ! $hasNameTemplate) {
+            $errors[] = "Falta 'name' o 'name_template'";
         }
 
         // route_name o route_name_suffix
@@ -82,12 +81,12 @@ final class ContextualNavItem
             $errors[] = "'route_params' debe ser un array si se proporciona";
         }
 
-        // current
+        // description
         if (
-            isset($config['current'])
-            && ! is_bool($config['current'])
+            isset($config['description'])
+            && ! is_string($config['description'])
         ) {
-            $errors[] = "'current' debe ser boolean si se proporciona";
+            $errors[] = "'description' debe ser string si se proporciona";
         }
 
         return $errors;

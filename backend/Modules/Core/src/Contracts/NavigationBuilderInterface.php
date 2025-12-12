@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Interfaces;
+namespace Modules\Core\Contracts;
 
 use Nwidart\Modules\Laravel\Module;
 
@@ -102,6 +102,17 @@ interface NavigationBuilderInterface
     ): array;
 
     /**
+     * Construye los ítems de navegación para los módulos que deben mostrarse en la sección de módulos.
+     *
+     * @param  array<Module>  $modules
+     * @return array<int, array<string, mixed>>
+     */
+    public function buildModuleNavItems(
+        array $modules,
+        callable $permissionChecker
+    ): array;
+
+    /**
      * Construye breadcrumbs a partir de una configuración explícita.
      *
      * @param  string  $moduleSlug  Slug del módulo
@@ -130,6 +141,18 @@ interface NavigationBuilderInterface
     ): mixed;
 
     /**
+     * Construye los ítems de navegación global.
+     *
+     * @param  array<int, array<string, mixed>>  $itemsConfig  Configuración de los ítems
+     * @param  callable  $permissionChecker  Función para verificar permisos
+     * @return array<int, array<string, mixed>> Ítems de navegación global
+     */
+    public function buildGlobalNavItems(
+        array $itemsConfig,
+        callable $permissionChecker
+    ): array;
+
+    /**
      * Prepara todos los elementos de navegación necesarios para una vista.
      *
      * @param  callable  $permissionChecker  Función para verificar permisos
@@ -152,4 +175,12 @@ interface NavigationBuilderInterface
         array $routeParams = [],
         array $viewData = []
     ): array;
+
+    /**
+     * Verifica si la ruta actual coincide con el nombre de ruta dado.
+     *
+     * @param  string  $routeName  Nombre de la ruta a verificar
+     * @return bool True si la ruta actual coincide
+     */
+    public function isCurrentRoute(string $routeName): bool;
 }
