@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests\Settings;
+namespace Modules\Core\Infrastructure\Laravel\Http\Requests\Settings;
 
-use App\Models\StaffUsers as User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUser as User;
 
 /**
  * Valida los datos para la actualización del perfil de un usuario del personal.

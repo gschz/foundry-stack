@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Settings;
+namespace Modules\Core\Infrastructure\Laravel\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
-use App\Services\ModuleRegistryService;
 use Illuminate\Support\Facades\Auth;
+use Modules\Core\Infrastructure\Laravel\Facades\Mod;
 
 /**
  * Controlador base para las páginas de configuración.
@@ -14,7 +14,10 @@ use Illuminate\Support\Facades\Auth;
  */
 abstract class BaseSettingsController extends Controller
 {
-    public function __construct(protected ModuleRegistryService $moduleRegistry) {}
+    public function __construct()
+    {
+        //
+    }
 
     /**
      * Obtiene los ítems de navegación para el menú de configuración.
@@ -23,6 +26,8 @@ abstract class BaseSettingsController extends Controller
      */
     protected function getSettingsNavigationItems(): array
     {
-        return $this->moduleRegistry->getGlobalNavItems(Auth::user());
+        return Mod::getGlobalNavItems(
+            Auth::guard('staff')->user()
+        );
     }
 }

@@ -47,6 +47,5 @@ Route::get(
 |--------------------------------------------------------------------------
 */
 require __DIR__.'/internal.php';
-require __DIR__.'/settings.php';
 require __DIR__.'/protect-assets.php';
 require __DIR__.'/ziggy-debug.php';
