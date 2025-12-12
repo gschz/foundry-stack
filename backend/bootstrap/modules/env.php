@@ -7,108 +7,153 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Env;
 
 return function (Application $application): void {
-    // Raíz del monorepo (un nivel arriba de backend)
+    // 1. Resolver Raíz del Proyecto (Monorepo)
     $projectRootRaw = dirname($application->basePath());
     $projectRoot = realpath($projectRootRaw) ?: $projectRootRaw;
 
-    // Detectar CLI / PHPUnit
+    // 2. Detectar Contexto de Ejecución
     $isCli = PHP_SAPI === 'cli';
     $argvString = isset($_SERVER['argv'])
         ? implode(' ', (array) $_SERVER['argv']) : '';
-    $isPhpUnit = $isCli && ($argvString !== '') && str_contains(
-        $argvString,
-        'phpunit'
-    );
+    $isPhpUnit = $isCli && ($argvString !== '')
+        && str_contains($argvString, 'phpunit');
 
-    // Detectar contenedor
     $runningInContainerEnv = Env::get(
         'APP_RUNNING_IN_CONTAINER',
         $_SERVER['APP_RUNNING_IN_CONTAINER'] ?? null
     );
-    $runningInContainer = filter_var($runningInContainerEnv, FILTER_VALIDATE_BOOL) ?: (is_file('/.dockerenv'));
+    $runningInContainer = filter_var(
+        $runningInContainerEnv,
+        FILTER_VALIDATE_BOOL
+    ) ?: (is_file('/.env.docker'));
 
-    // Entorno actual (si ya viene del sistema)
     $appEnv = Env::get('APP_ENV', $_SERVER['APP_ENV'] ?? null);
 
-    // Configuración de bootstrap/env sin depender del contenedor
-    $envConfig = [];
-    try {
-        $configFile = $application->basePath() . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'bootstrap.php';
-        if (is_file($configFile)) {
-            $bootstrapConfig = require $configFile;
-            if (
-                is_array($bootstrapConfig)
-                && isset($bootstrapConfig['env'])
-                && is_array($bootstrapConfig['env'])
-            ) {
-                $envConfig = $bootstrapConfig['env'];
+    // 3. Definición de Archivos de Entorno (Hardcoded Estándar)
+    // Ya no dependemos de config/bootstrap.php para esto.
+    $preferred = '.env.local';
+    $testing = '.env.testing';
+    $docker = '.env.docker';
+    $production = '.env.production.local';
+    $usersEnvFile = '.env.users';
+    $required = ['APP_ENV', 'APP_KEY'];
+
+    // 4. Determinar Archivo de Entorno (Lógica Explícita)
+    $envFileName = null;
+    $context = 'default';
+
+    // Prioridad 1: Override Explícito (ej. Bun --env-file inyectando LARAVEL_ENV_FILE)
+    $explicitEnvFile = Env::get(
+        'LARAVEL_ENV_FILE',
+        $_SERVER['LARAVEL_ENV_FILE'] ?? null
+    );
+    if ($explicitEnvFile) {
+        $envFileName = $explicitEnvFile;
+        $context = 'explicit (LARAVEL_ENV_FILE)';
+    }
+    // Prioridad 2: Entorno de Pruebas
+    elseif ($isPhpUnit || $appEnv === 'testing') {
+        $envFileName = $testing;
+        $context = 'testing';
+    }
+    // Prioridad 3: Contenedor Docker
+    elseif ($runningInContainer) {
+        $envFileName = $docker;
+        $context = 'docker';
+    }
+    // Prioridad 4: Producción
+    elseif ($appEnv === 'production') {
+        $envFileName = $production;
+        $context = 'production';
+    }
+    // Prioridad 5: Desarrollo Local (Por Defecto o Fallo de Configuración)
+    else {
+        // Validación Estricta:
+        // Si detectamos que YA existen variables críticas en el entorno (inyectadas por Bun, Docker mal configurado, etc.)
+        // pero NO tenemos un LARAVEL_ENV_FILE explícito, asumimos una configuración rota y fallamos.
+
+        $hasInjectedEnv = Env::get('APP_KEY') !== null
+            || (Env::get('APP_ENV') !== null && Env::get('APP_ENV') !== 'production');
+
+        if ($hasInjectedEnv) {
+            $msg = "\n[FATAL] Configuración de entorno ambigua detectada.\n".
+                "Se encontraron variables de entorno inyectadas pero falta 'LARAVEL_ENV_FILE'.\n";
+
+            if (defined('STDERR')) {
+                fwrite(STDERR, $msg);
+            } else {
+                error_log($msg);
             }
+
+            exit(1);
         }
-    } catch (\Throwable) {
-        // Continuar con valores por defecto si falla la carga
-        $envConfig = [];
+
+        // Solo si el entorno está "limpio" (ej. ejecución manual php artisan), usamos el default.
+        $envFileName = $preferred;
+        $context = 'local (default fallback)';
     }
 
-    $preferred = (string) ($envConfig['preferred'] ?? '.env.local');
-    $testing = (string) ($envConfig['testing'] ?? '.env.testing');
-    $docker = (string) ($envConfig['docker'] ?? '.env.docker');
-    $production = (string) ($envConfig['production'] ?? '.env.production.local');
-    $fallbackPg = (string) ($envConfig['fallback_pg'] ?? '.env.pg.local');
-    $usersEnvFile = (string) ($envConfig['users_file'] ?? '.env.users');
-    $required = (array) ($envConfig['required'] ?? ['APP_ENV', 'APP_KEY']);
+    // 5. Validar Existencia del Archivo (Sin Fallbacks Silenciosos)
+    throw_unless(
+        is_string($envFileName),
+        RuntimeException::class,
+        'No se pudo determinar el nombre del archivo de entorno.'
+    );
 
-    // Selección del archivo .env
-    $envFile = $preferred;
-    if ($isPhpUnit || $appEnv === 'testing') {
-        $envFile = $testing;
-    } elseif ($runningInContainer) {
-        $envFile = $docker;
-    } elseif ($appEnv === 'production') {
-        $envFile = $production;
-    } elseif (
-        ! file_exists($projectRoot . DIRECTORY_SEPARATOR . $envFile)
-        && file_exists($projectRoot . DIRECTORY_SEPARATOR . $fallbackPg)
-    ) {
-        // Fallback a configuración PostgreSQL local si .env.local no existe
-        $envFile = $fallbackPg;
-    }
+    $envPath = $projectRoot.DIRECTORY_SEPARATOR.$envFileName;
 
-    $envPath = $projectRoot . DIRECTORY_SEPARATOR . $envFile;
-    if (is_file($envPath) && is_readable($envPath)) {
-        // Cargar env desde raíz y alinear el bootstrapper
-        Dotenv::createMutable($projectRoot, $envFile)->safeLoad();
-        $application->loadEnvironmentFrom(
-            '..' . DIRECTORY_SEPARATOR . $envFile
+    if (! file_exists($envPath)) {
+        $msg = sprintf(
+            "\n[FATAL] Archivo de entorno no encontrado para el contexto '%s'.\n".
+                "Ruta esperada: %s\n",
+            $context,
+            $envPath
         );
-    } elseif (! $isPhpUnit && $appEnv !== 'testing') {
-        // Sin archivo .env legible; continuar con variables de sistema
-        // En entorno de pruebas, no generar ruido en la salida
-        error_log(sprintf('[bootstrap] Archivo de entorno no legible/no encontrado: %s', $envPath));
+
+        if (defined('STDERR')) {
+            fwrite(STDERR, $msg);
+        } else {
+            error_log($msg);
+        }
+
+        if (! $isPhpUnit) {
+            exit(1);
+        }
     }
 
-    // Validaciones mínimas de variables requeridas
+    // 6. Cargar Variables de Entorno
+    if (is_file($envPath) && is_readable($envPath)) {
+        try {
+            Dotenv::createImmutable($projectRoot, $envFileName)->safeLoad();
+            $application->loadEnvironmentFrom(
+                '..'.DIRECTORY_SEPARATOR.$envFileName
+            );
+        } catch (Throwable $e) {
+            $msg = sprintf(
+                "\n[FATAL] Error al cargar el archivo de entorno: %s\n",
+                $e->getMessage()
+            );
+            if (defined('STDERR')) {
+                fwrite(STDERR, $msg);
+            }
+
+            exit(1);
+        }
+    }
+
+    // 7. Validar Variables Requeridas
     foreach ($required as $key) {
         $val = Env::get($key, $_SERVER[$key] ?? null);
         if ($val === null || $val === '') {
-            if ($key === 'APP_KEY') {
-                // Generar APP_KEY si falta (útil en testing/CI)
-                $random = base64_encode(random_bytes(32));
-                $generated = 'base64:' . $random;
-                putenv('APP_KEY=' . $generated);
-                $_ENV['APP_KEY'] = $generated;
-                $_SERVER['APP_KEY'] = $generated;
-            } else {
-                error_log(sprintf('[bootstrap] Variable requerida ausente: %s', $key));
+            $msg = sprintf(
+                "\n[FATAL] Variable de entorno requerida ausente: %s\n",
+                $key
+            );
+            if (defined('STDERR')) {
+                fwrite(STDERR, $msg);
             }
-        }
-    }
 
-    // Cargar variables adicionales desde .env.users en la raíz del monorepo
-    try {
-        if (file_exists($projectRoot . DIRECTORY_SEPARATOR . $usersEnvFile)) {
-            Dotenv::createMutable($projectRoot, $usersEnvFile)->safeLoad();
+            exit(1);
         }
-    } catch (\Throwable) {
-        // Ignorar cualquier error al cargar .env.users
     }
 };

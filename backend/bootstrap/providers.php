@@ -6,7 +6,7 @@ declare(strict_types=1);
 $baseProviders = [
     App\Providers\EarlyBindingsServiceProvider::class,
     App\Providers\RuntimeConfigServiceProvider::class,
-    Nunomaduro\Essentials\EssentialsServiceProvider::class,
+    NunoMaduro\Essentials\EssentialsServiceProvider::class,
     Illuminate\Cache\CacheServiceProvider::class,
     Illuminate\Translation\TranslationServiceProvider::class,
     App\Providers\AppServiceProvider::class,
@@ -14,8 +14,8 @@ $baseProviders = [
 ];
 
 // Descubrir proveedores de módulos activos según modules_statuses.json
-$modulesDir = __DIR__ . '/../Modules';
-$statusesPath = dirname(__DIR__) . '/modules_statuses.json';
+$modulesDir = __DIR__.'/../Modules';
+$statusesPath = dirname(__DIR__).'/modules_statuses.json';
 $activeModules = [];
 if (is_file($statusesPath)) {
     $json = json_decode((string) file_get_contents($statusesPath), true);
@@ -30,9 +30,13 @@ if (is_file($statusesPath)) {
 
 $moduleProviders = [];
 foreach ($activeModules as $module) {
-    $providerPath = $modulesDir . '/' . $module . '/app/Providers/' . $module . 'ServiceProvider.php';
+    $providerPath = $modulesDir.'/'.$module.'/app/Providers/'.$module.'ServiceProvider.php';
     if (is_file($providerPath)) {
-        $moduleProviders[] = "Modules\\{$module}\\App\\Providers\\{$module}ServiceProvider";
+        $moduleProviders[] = sprintf(
+            'Modules\%s\App\Providers\%sServiceProvider',
+            $module,
+            $module
+        );
     }
 }
 
