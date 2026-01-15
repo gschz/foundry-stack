@@ -2,8 +2,10 @@ name: Format Frontend (Prettier)
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    paths:
+      - "frontend/**"
+  pull_request:
     paths:
       - "frontend/**"
 

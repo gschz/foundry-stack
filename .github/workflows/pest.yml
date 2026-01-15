@@ -2,8 +2,12 @@ name: Pest
 
 on:
   pull_request:
+    paths:
+      - "backend/**"
   push:
     branches: [main]
+    paths:
+      - "backend/**"
 
 jobs:
   pest:
@@ -20,6 +24,14 @@ jobs:
       - name: Install dependencies (backend)
         working-directory: backend
         run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Setup Bun (for frontend build)
+        uses: oven-sh/setup-bun@v2
+      - name: Install dependencies (frontend)
+        working-directory: frontend
+        run: bun install --no-progress
+      - name: Build frontend assets
+        working-directory: frontend
+        run: bun run build
       - name: Run Pest
         working-directory: backend
         run: composer run test
