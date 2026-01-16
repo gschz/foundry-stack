@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Internal;
 
-use App\Traits\PermissionVerifier;
+use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\RedirectResponse;
@@ -15,9 +15,10 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 use Inertia\Response as InertiaResponse;
-use Modules\Core\Contracts\ModuleRegistryInterface;
+use Modules\Core\Contracts\AddonRegistryInterface;
 use Modules\Core\Contracts\ViewComposerInterface;
 use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
+use Modules\Core\Infrastructure\Laravel\Traits\PermissionVerifier;
 
 /**
  * Controlador para el dashboard principal del sistema.
@@ -26,7 +27,7 @@ use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
  * del personal tras iniciar sesión. Se encarga de coordinar los servicios
  * para obtener los módulos disponibles y componer los datos para la vista.
  */
-final class InternalDashboardController extends Controller
+final class MainDashboardController extends Controller
 {
     use PermissionVerifier;
 
@@ -35,7 +36,7 @@ final class InternalDashboardController extends Controller
      */
     public function __construct(
         private readonly ViewComposerInterface $viewComposer,
-        private readonly ModuleRegistryInterface $moduleRegistry
+        private readonly AddonRegistryInterface $moduleRegistry
     ) {
         $this->middleware(['auth:staff']);
     }
@@ -91,7 +92,7 @@ final class InternalDashboardController extends Controller
             $this->updateLastActivity($user);
 
             // Obtener los módulos disponibles para el usuario según sus permisos.
-            $availableModules = $this->moduleRegistry->getAvailableModulesForUser($user);
+            $availableModules = $this->moduleRegistry->getAvailableAddonsForUser($user);
 
             // Verificar si necesita cambiar contraseña
             $passwordChangeRequired = $this->isPasswordChangeRequired($user);
@@ -100,7 +101,7 @@ final class InternalDashboardController extends Controller
             $viewData = $this->viewComposer->composeDashboardViewContext(
                 user: $user,
                 availableModules: $availableModules,
-                permissionChecker: fn (string $permission): bool => $this->can($permission),
+                permissionChecker: fn (string $permission): bool => $user->hasPermissionToCross($permission),
                 request: $request
             );
 

@@ -2,11 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Auth\Internal;
+namespace App\Http\Controllers\Internal;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Services\SecurityAuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
+use Modules\Core\Contracts\AccountSecurity\SecurityAuditInterface;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
@@ -31,11 +31,13 @@ final class LoginController extends Controller
      * Inyecta el servicio de auditoría de seguridad para ser utilizado
      * en los métodos de almacenamiento y destrucción de la sesión.
      *
-     * @param  SecurityAuditService  $securityService  El servicio para manejar la auditoría de seguridad.
+     * @param  SecurityAuditInterface  $securityService  El servicio para manejar la auditoría de seguridad.
      */
     public function __construct(
-        private readonly SecurityAuditService $securityService
-    ) {}
+        private readonly SecurityAuditInterface $securityService
+    ) {
+        //
+    }
 
     /**
      * Muestra la vista de inicio de sesión para el personal.
@@ -75,6 +77,9 @@ final class LoginController extends Controller
      * Maneja una solicitud de autenticación entrante.
      *
      * @param  LoginRequest  $request  La solicitud de login validada.
+     * @return SymfonyResponse Respuesta de redirección completa para Inertia.
+     *
+     * @throws \Illuminate\Validation\ValidationException Si las credenciales son inválidas.
      */
     public function store(LoginRequest $request): SymfonyResponse
     {
@@ -87,7 +92,7 @@ final class LoginController extends Controller
         // El servicio de seguridad regenera el token de sesión para prevenir ataques de session fixation.
         $this->securityService->prepareAuthenticatedSession($request);
 
-        /** @var \App\Models\StaffUsers|null $user */
+        /** @var \Modules\Core\Infrastructure\Eloquent\Models\StaffUser|null $user */
         $user = Auth::guard('staff')->user();
 
         // 3. Gestionar notificaciones de seguridad.
@@ -101,19 +106,22 @@ final class LoginController extends Controller
         // NOTA: Usamos Inertia::location para forzar una navegación de página completa y evitar
         // problemas de cookies SameSite al realizar redirecciones vía XHR entre orígenes distintos
         // (por ejemplo, frontend en :5173 y backend en :8080) durante el desarrollo.
-        $intended = redirect()->intended(route('internal.dashboard'))->getTargetUrl();
+        $intended = redirect()->intended(route('internal.staff.dashboard'))->getTargetUrl();
 
         return Inertia::location($intended);
     }
 
     /**
      * Destruye una sesión autenticada (cierre de sesión).
+     *
+     * @param  Request  $request  Solicitud HTTP actual.
+     * @return RedirectResponse Redirección a la pantalla de login.
      */
     public function destroy(Request $request): RedirectResponse
     {
         // Registrar logout para auditoría de seguridad si está en modo debug
         if (config('app.debug')) {
-            Log::info('Logout de usuario staff', [
+            Log::channel('security_core')->info('Logout de usuario staff', [
                 'user_id' => Auth::guard('staff')->id(),
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
