@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\RedirectResponse;
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
 
 /**
  * Controlador para gestionar la verificación final del correo electrónico.
@@ -27,7 +28,7 @@ final class VerifyEmailController extends Controller
      */
     public function __invoke(EmailVerificationRequest $request): RedirectResponse
     {
-        /** @var \App\Models\StaffUsers $user */
+        /** @var StaffUser $user */
         $user = $request->user();
 
         // Si el usuario aún no ha verificado su correo, se procede a marcarlo.
@@ -41,6 +42,8 @@ final class VerifyEmailController extends Controller
 
         // Redirige al usuario al dashboard, añadiendo un parámetro para que el frontend
         // pueda mostrar un mensaje de bienvenida o de estado.
-        return redirect()->intended(route('internal.dashboard', absolute: false).'?verified=1');
+        return redirect()->intended(
+            route('internal.staff.dashboard', absolute: false).'?verified=1'
+        );
     }
 }

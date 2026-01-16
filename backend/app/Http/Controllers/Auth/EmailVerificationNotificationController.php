@@ -29,7 +29,9 @@ final class EmailVerificationNotificationController extends Controller
         // Primero, se comprueba si el correo del usuario ya ha sido verificado.
         $user = $this->requireStaffUser($request);
         if ($user->hasVerifiedEmail()) {
-            return redirect()->intended(route('internal.dashboard', absolute: false));
+            return redirect()->intended(
+                route('internal.staff.dashboard', absolute: false)
+            );
         }
 
         // Si el correo no está verificado, se invoca el método de Laravel para enviar

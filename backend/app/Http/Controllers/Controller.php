@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Models\StaffUsers;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
 
 /**
  * Controlador base de la aplicación.
@@ -27,12 +27,12 @@ abstract class Controller extends BaseController
     /**
      * Obtiene el usuario autenticado del guard 'staff' o aborta con 403.
      */
-    protected function requireStaffUser(Request $request): StaffUsers
+    protected function requireStaffUser(Request $request): StaffUser
     {
-        /** @var StaffUsers|null $user */
+        /** @var StaffUser|null $user */
         $user = $request->user('staff');
 
-        abort_unless($user instanceof StaffUsers, 403, 'Usuario no autenticado');
+        abort_unless($user instanceof StaffUser, 403, 'Usuario no autenticado');
 
         return $user;
     }
