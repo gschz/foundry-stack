@@ -7,6 +7,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -38,7 +39,7 @@ final class EnsureUserIsActive
             return $this->handleUnauthenticated($request);
         }
 
-        /** @var \App\Models\StaffUsers $user */
+        /** @var StaffUser $user */
         // Verificar si el usuario está activo
         if (! $user->isActive()) {
             return $this->handleInactiveUser($request, $guard);

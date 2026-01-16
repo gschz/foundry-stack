@@ -45,13 +45,8 @@ final class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $sharedData = parent::share($request);
-
-        // Usar la nueva acción de composición del módulo Core
-        $coreProps = $this->composeInertiaProps->execute($request);
-
-        return array_merge($sharedData, $coreProps, [
-            'name' => config('app.name', 'Laravel'),
+        $baseProps = [
+            'name' => config('app.name', 'Foundry Stack'),
             'ziggy' => fn () => RouteFilter::getFilteredZiggy($request),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
@@ -62,6 +57,14 @@ final class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state')
                 || $request->cookie('sidebar_state') === 'true',
-        ]);
+
+        ];
+
+        $sharedData = parent::share($request);
+
+        // Usar la nueva acción de composición del módulo Core
+        $coreProps = $this->composeInertiaProps->execute($request);
+
+        return array_merge($baseProps, $coreProps, $sharedData);
     }
 }

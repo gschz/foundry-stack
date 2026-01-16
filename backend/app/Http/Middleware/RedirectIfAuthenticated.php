@@ -22,7 +22,7 @@ final class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                return to_route('internal.dashboard');
+                return to_route('internal.staff.dashboard');
             }
         }
 
