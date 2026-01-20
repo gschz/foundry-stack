@@ -2,19 +2,28 @@
 
 declare(strict_types=1);
 
-namespace Modules\Core\Application\Navigation;
+namespace Modules\Core\Application\Menu;
 
 use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
-use Modules\Core\Contracts\ModuleRegistryInterface;
+use Modules\Core\Contracts\AddonRegistryInterface;
 use Nwidart\Modules\Laravel\Module;
 
-final readonly class BuildModuleNavigation
+/**
+ * Construye navegación por addons/módulos para el panel.
+ *
+ * Genera:
+ * - ítems de barra lateral (main)
+ * - ítems de sección de módulos (module)
+ * - tarjetas de módulos para dashboard
+ * Registra métricas y denegaciones de permisos.
+ */
+final readonly class BuildAddonMenu
 {
     public function __construct(
-        private ModuleRegistryInterface $moduleRegistry
+        private AddonRegistryInterface $moduleRegistry
     ) {
         //
     }
@@ -37,7 +46,7 @@ final readonly class BuildModuleNavigation
 
         foreach ($modules as $module) {
             $moduleName = mb_strtolower($module->getName());
-            $config = $this->moduleRegistry->getModuleConfig($moduleName);
+            $config = $this->moduleRegistry->getAddonConfig($moduleName);
 
             if (! $this->shouldShowInNav($config)) {
                 continue;
@@ -57,8 +66,12 @@ final readonly class BuildModuleNavigation
                     'title' => isset($config['functional_name']) && is_string($config['functional_name'])
                         ? $config['functional_name']
                         : $moduleName,
-                    'href' => $routeName !== null ? $this->generateRoute($routeName) : '#',
-                    'icon' => isset($navItem['icon']) && is_string($navItem['icon']) ? $navItem['icon'] : null,
+                    'href' => $routeName !== null
+                        ? $this->generateRoute($routeName)
+                        : '#',
+                    'icon' => isset($navItem['icon']) && is_string($navItem['icon'])
+                        ? $navItem['icon']
+                        : null,
                     'current' => $routeName !== null && $this->isCurrentRoute($routeName),
                 ];
 
@@ -104,7 +117,7 @@ final readonly class BuildModuleNavigation
 
         foreach ($modules as $module) {
             $moduleName = mb_strtolower($module->getName());
-            $config = $this->moduleRegistry->getModuleConfig($moduleName);
+            $config = $this->moduleRegistry->getAddonConfig($moduleName);
 
             if (! $this->shouldShowInNav($config)) {
                 continue;
@@ -118,20 +131,27 @@ final readonly class BuildModuleNavigation
 
             if ($allowed && ! $showInMainNav) {
                 $routeName = isset($navItem['route_name']) && is_string($navItem['route_name'])
-                    ? $navItem['route_name'] : null;
+                    ? $navItem['route_name']
+                    : null;
 
                 $moduleItems[] = [
                     'title' => isset($config['functional_name']) && is_string($config['functional_name'])
-                        ? $config['functional_name'] : $moduleName,
+                        ? $config['functional_name']
+                        : $moduleName,
                     'href' => $routeName !== null
-                        ? $this->generateRoute($routeName) : '#',
+                        ? $this->generateRoute($routeName)
+                        : '#',
                     'icon' => isset($navItem['icon']) && is_string($navItem['icon'])
-                        ? $navItem['icon'] : null,
+                        ? $navItem['icon']
+                        : null,
                     'current' => $routeName !== null && $this->isCurrentRoute($routeName),
                 ];
                 $includedCount++;
             } elseif (! $allowed) {
-                $this->recordNavPermissionDenial(is_string($permission) ? $permission : null, $moduleName);
+                $this->recordNavPermissionDenial(
+                    is_string($permission) ? $permission : null,
+                    $moduleName
+                );
                 $deniedCount++;
             }
         }
@@ -164,7 +184,7 @@ final readonly class BuildModuleNavigation
 
         foreach ($allModules as $module) {
             $moduleNameLower = mb_strtolower($module->getName());
-            $config = $this->moduleRegistry->getModuleConfig($moduleNameLower);
+            $config = $this->moduleRegistry->getAddonConfig($moduleNameLower);
 
             if (! $this->shouldShowInNav($config)) {
                 continue;
@@ -182,8 +202,11 @@ final readonly class BuildModuleNavigation
                 'name' => isset($config['functional_name']) && is_string($config['functional_name'])
                     ? $config['functional_name']
                     : $module->getName(),
-                'description' => $config['description'] ?? '',
-                'href' => $routeName !== null ? $this->generateRoute($routeName) : '#',
+                'description' => $config['description']
+                    ?? '',
+                'href' => $routeName !== null
+                    ? $this->generateRoute($routeName)
+                    : '#',
                 'icon' => isset($navItem['icon']) && is_string($navItem['icon'])
                     ? $navItem['icon']
                     : null,
@@ -215,7 +238,7 @@ final readonly class BuildModuleNavigation
                 return route($routeName);
             }
         } catch (Exception) {
-            // Log suppressed here to match original service behavior or simplicity
+            //
         }
 
         return '#';

@@ -4,28 +4,38 @@ declare(strict_types=1);
 
 namespace Modules\Core\Infrastructure\Laravel\Services;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
-use Modules\Core\Application\Navigation\AssembleNavigation;
-use Modules\Core\Application\Navigation\BuildBreadcrumbs;
-use Modules\Core\Application\Navigation\BuildContextualNavigation;
-use Modules\Core\Application\Navigation\BuildGlobalNavigation;
-use Modules\Core\Application\Navigation\BuildModuleNavigation;
-use Modules\Core\Contracts\NavigationBuilderInterface;
-use Modules\Core\Domain\Navigation\NavigationConfigResolver;
+use Modules\Core\Application\Menu\AssembleMenu;
+use Modules\Core\Application\Menu\BuildAddonMenu;
+use Modules\Core\Application\Menu\BuildBreadcrumbs;
+use Modules\Core\Application\Menu\BuildContextualMenu;
+use Modules\Core\Application\Menu\BuildGlobalMenu;
+use Modules\Core\Contracts\MenuBuilderInterface;
+use Modules\Core\Domain\Menu\MenuConfigResolver;
 
-final readonly class NavigationBuilderService implements NavigationBuilderInterface
+/**
+ * Servicio adaptador para construcción de navegación y breadcrumbs.
+ *
+ * Implementa los contratos de menú del Core y delega en casos de uso
+ * de Application. Registra latencia de armado para observabilidad.
+ */
+final readonly class MenuBuilderService implements MenuBuilderInterface
 {
     public function __construct(
-        private AssembleNavigation $assembler,
-        private BuildGlobalNavigation $globalBuilder,
-        private BuildModuleNavigation $moduleBuilder,
-        private BuildContextualNavigation $contextualBuilder,
+        private AssembleMenu $assembler,
+        private BuildGlobalMenu $globalBuilder,
+        private BuildAddonMenu $moduleBuilder,
+        private BuildContextualMenu $contextualBuilder,
         private BuildBreadcrumbs $breadcrumbsBuilder,
-        private NavigationConfigResolver $configResolver
+        private MenuConfigResolver $configResolver
     ) {
         //
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function buildNavigation(
         string $navType,
         array $itemsConfig,
@@ -42,6 +52,9 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
         );
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function buildContextualNavItems(
         array $itemsConfig,
         callable $permissionChecker,
@@ -57,6 +70,9 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
         );
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function buildPanelItems(
         array $itemsConfig,
         callable $permissionChecker,
@@ -72,6 +88,9 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
         );
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function buildNavItems(
         array $modules,
         callable $permissionChecker
@@ -82,6 +101,9 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
         );
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function buildModuleNavItems(
         array $modules,
         callable $permissionChecker
@@ -92,6 +114,9 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
         );
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function buildModuleCards(
         array $allModules,
         array $accessibleModules = []
@@ -102,6 +127,9 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
         );
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function buildConfiguredBreadcrumbs(
         string $moduleSlug,
         string $routeSuffix,
@@ -116,6 +144,9 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
         );
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function buildGlobalNavItems(
         array $itemsConfig,
         callable $permissionChecker
@@ -123,14 +154,21 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
         return $this->globalBuilder->execute($itemsConfig, $permissionChecker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function resolveConfigReferences(
         $config,
         array $moduleConfig
     ): mixed {
-        // Compatibility wrapper
         return $this->configResolver->resolve($config, $moduleConfig);
     }
 
+    /**
+     * Compone la estructura completa de navegación y registra latencia.
+     *
+     * {@inheritDoc}
+     */
     public function assembleNavigationStructure(
         callable $permissionChecker,
         ?string $moduleSlug = null,
@@ -141,7 +179,9 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
         array $routeParams = [],
         array $viewData = []
     ): array {
-        return $this->assembler->execute(
+        $t0 = microtime(true);
+
+        $result = $this->assembler->execute(
             $permissionChecker,
             $moduleSlug,
             $contextualItemsConfig,
@@ -151,8 +191,41 @@ final readonly class NavigationBuilderService implements NavigationBuilderInterf
             $routeParams,
             $viewData
         );
+
+        $durationMs = (microtime(true) - $t0) * 1000;
+        $mainCount = is_array($result['mainNavItems'] ?? null)
+            ? count($result['mainNavItems'])
+            : 0;
+        $moduleCount = is_array($result['moduleNavItems'] ?? null)
+            ? count($result['moduleNavItems'])
+            : 0;
+        $contextualCount = is_array($result['contextualNavItems'] ?? null)
+            ? count($result['contextualNavItems'])
+            : 0;
+        $globalCount = is_array($result['globalNavItems'] ?? null)
+            ? count($result['globalNavItems'])
+            : 0;
+        $breadcrumbsCount = is_array($result['breadcrumbs'] ?? null)
+            ? count($result['breadcrumbs'])
+            : 0;
+
+        Log::channel('domain_navigation')->info('nav_build_latency', [
+            'module_slug' => $moduleSlug,
+            'route_suffix' => $routeSuffix,
+            'duration_ms' => round($durationMs, 2),
+            'main_count' => $mainCount,
+            'module_count' => $moduleCount,
+            'contextual_count' => $contextualCount,
+            'global_count' => $globalCount,
+            'breadcrumbs_count' => $breadcrumbsCount,
+        ]);
+
+        return $result;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function isCurrentRoute(string $routeName): bool
     {
         $currentRoute = Route::currentRouteName();

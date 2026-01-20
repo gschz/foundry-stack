@@ -2,13 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Modules\Core\Application\Navigation;
+namespace Modules\Core\Application\Menu;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
-final class BuildGlobalNavigation
+/**
+ * Construye navegación global (configuración) del panel.
+ *
+ * Genera ítems con href por ruta o URL directa y marca el ítem actual.
+ * Registra denegaciones de permisos y normaliza parámetros de rutas.
+ */
+final class BuildGlobalMenu
 {
     /**
      * Construye los ítems de navegación global.
@@ -140,7 +146,6 @@ final class BuildGlobalNavigation
         Cache::increment('metrics:navigation:denied:total');
         Cache::increment('metrics:navigation:denied:permission:'.$permission);
 
-        // Log simple por ahora, idealmente usar un servicio de métricas
         Log::channel('domain_navigation')->info('permission_denied', [
             'permission' => $permission,
             'context' => 'global_nav',

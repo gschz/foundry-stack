@@ -8,9 +8,10 @@ use Nwidart\Modules\Laravel\Module;
 
 /**
  * Interfaz para la construcción de elementos de navegación del sistema.
+ *
  * Define cómo se deben construir los diferentes tipos de navegación y estructuras relacionadas.
  */
-interface NavigationBuilderInterface
+interface MenuBuilderInterface
 {
     /**
      * Tipo de elemento de navegación: contextual.

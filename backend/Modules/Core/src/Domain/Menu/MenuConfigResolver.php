@@ -2,11 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Modules\Core\Domain\Navigation;
+namespace Modules\Core\Domain\Menu;
 
-use Illuminate\Support\Facades\Log;
-
-final class NavigationConfigResolver
+/**
+ * Resolver de configuración de menú declarativo.
+ *
+ * Soporta referencias tipo '$ref:path.to.component' dentro del config de módulo
+ * y aplica parámetros de ruta cuando corresponde. Provee utilidades para
+ * arrays asociativos/secuenciales y rutas alternativas (links/grupos).
+ */
+final class MenuConfigResolver
 {
     /**
      * Resuelve referencias en la configuración del formato '$ref:path.to.component'.
@@ -43,12 +48,8 @@ final class NavigationConfigResolver
                 $value = $this->tryAlternativePaths($parts, $config, $directPathFound);
             }
 
-            // Si ninguna ruta funcionó, registrar advertencia
+            // Si ninguna ruta funcionó, devolver el valor original
             if (! $directPathFound) {
-                Log::channel('domain_navigation')->warning(
-                    sprintf('Referencia no encontrada: %s (intentadas rutas alternativas)', $item)
-                );
-
                 return $item;
             }
 
@@ -61,14 +62,7 @@ final class NavigationConfigResolver
                 );
             }
 
-            // Si el valor es una ruta y tenemos parámetros, aplicarlos
-            if (
-                is_string($value)
-                && str_starts_with($value, 'internal.')
-                && $routeParams !== []
-            ) {
-                return route($value, $routeParams);
-            }
+            // Mantener valor como referencia; generación de URL se delega a capas superiores
 
             return $value;
         }

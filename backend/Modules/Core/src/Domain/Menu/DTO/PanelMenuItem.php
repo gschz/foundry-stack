@@ -2,9 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Modules\Core\Domain\Navigation\DTO;
+namespace Modules\Core\Domain\Menu\DTO;
 
-final class PanelItem
+/**
+ * DTO de validación para ítems del panel de un módulo.
+ *
+ * Verifica estructura y tipos esperados en config declarativa del panel.
+ */
+final class PanelMenuItem
 {
     /**
      * Valida la configuración de un ítem del panel.

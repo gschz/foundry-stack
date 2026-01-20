@@ -2,19 +2,26 @@
 
 declare(strict_types=1);
 
-namespace Modules\Core\Application\Navigation;
+namespace Modules\Core\Application\Menu;
 
 use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
-use Modules\Core\Contracts\ModuleRegistryInterface;
-use Modules\Core\Contracts\NavigationBuilderInterface;
-use Modules\Core\Domain\Navigation\DTO\ContextualNavItem;
-use Modules\Core\Domain\Navigation\DTO\PanelItem;
-use Modules\Core\Domain\Navigation\NavigationConfigResolver;
+use Modules\Core\Contracts\AddonRegistryInterface;
+use Modules\Core\Contracts\MenuBuilderInterface;
+use Modules\Core\Domain\Menu\DTO\ContextualMenuItem;
+use Modules\Core\Domain\Menu\DTO\PanelMenuItem;
+use Modules\Core\Domain\Menu\MenuConfigResolver;
+use Modules\Core\Infrastructure\Laravel\Events\MenuPermissionDenied;
 
-final readonly class BuildContextualNavigation
+/**
+ * Construye navegación contextual y de panel para vistas de módulos.
+ *
+ * Resuelve referencias declarativas, valida DTOs de menú y registra
+ * denegaciones/observabilidad. Soporta títulos dinámicos y rutas seguras.
+ */
+final readonly class BuildContextualMenu
 {
     /**
      * @var array<string, array{
@@ -24,15 +31,15 @@ final readonly class BuildContextualNavigation
      * }>
      */
     private const array NAV_TYPE_CONFIG = [
-        NavigationBuilderInterface::NAV_TYPE_CONTEXTUAL => [
+        MenuBuilderInterface::NAV_TYPE_CONTEXTUAL => [
             'textKey' => 'title',
             'textTemplateKey' => 'title_template',
             'extraFields' => [
-                'href' => 'route',
+                'href' => 'href',
                 'current' => 'current',
             ],
         ],
-        NavigationBuilderInterface::NAV_TYPE_PANEL => [
+        MenuBuilderInterface::NAV_TYPE_PANEL => [
             'textKey' => 'name',
             'textTemplateKey' => 'name_template',
             'extraFields' => [
@@ -43,8 +50,8 @@ final readonly class BuildContextualNavigation
     ];
 
     public function __construct(
-        private ModuleRegistryInterface $moduleRegistry,
-        private NavigationConfigResolver $configResolver
+        private AddonRegistryInterface $moduleRegistry,
+        private MenuConfigResolver $configResolver
     ) {
         //
     }
@@ -70,7 +77,7 @@ final readonly class BuildContextualNavigation
         }
 
         // Resolver referencias en la configuración si existen
-        $moduleConfig = $this->moduleRegistry->getModuleConfig($moduleSlug);
+        $moduleConfig = $this->moduleRegistry->getAddonConfig($moduleSlug);
 
         $resolvedConfig = $this->configResolver->resolve(
             $itemsConfig,
@@ -81,17 +88,30 @@ final readonly class BuildContextualNavigation
         $resolvedConfig = is_array($resolvedConfig)
             ? array_values($resolvedConfig)
             : [];
-        /** @var array<int, array<string, mixed>> $resolvedConfig */
+        /** @var array<int, array<mixed>> $resolvedConfig */
         $resolvedConfig = array_values(
             array_filter(
                 $resolvedConfig,
                 is_array(...)
             )
         );
+        $resolvedConfig = $this->flattenResolvedConfig($resolvedConfig);
+        $resolvedConfig = array_map(
+            static function (array $item): array {
+                $assoc = [];
+                foreach ($item as $k => $v) {
+                    $assoc[(string) $k] = $v;
+                }
+
+                return $assoc;
+            },
+            $resolvedConfig
+        );
 
         // Obtener la configuración específica para el tipo de navegación
         $config = self::NAV_TYPE_CONFIG[$navType];
 
+        /** @var array<int, array<string, mixed>> $resolvedConfig */
         return $this->buildItems(
             $resolvedConfig,
             $permissionChecker,
@@ -101,6 +121,39 @@ final readonly class BuildContextualNavigation
             $config['textTemplateKey'],
             $config['extraFields']
         );
+    }
+
+    /**
+     * @param  array<int, array<mixed>>  $resolvedConfig
+     * @return array<int, array<mixed>>
+     */
+    private function flattenResolvedConfig(array $resolvedConfig): array
+    {
+        $flattened = [];
+
+        foreach ($resolvedConfig as $item) {
+            if (array_is_list($item)) {
+                $allNestedArrays = true;
+                foreach ($item as $nested) {
+                    if (! is_array($nested)) {
+                        $allNestedArrays = false;
+                        break;
+                    }
+                }
+
+                if ($allNestedArrays) {
+                    foreach ($item as $nested) {
+                        $flattened[] = (array) $nested;
+                    }
+
+                    continue;
+                }
+            }
+
+            $flattened[] = $item;
+        }
+
+        return $flattened;
     }
 
     /**
@@ -125,9 +178,9 @@ final readonly class BuildContextualNavigation
             // Validación previa según tipo de item
             $errors = [];
             if ($textKey === 'name') {
-                $errors = PanelItem::validate($config);
+                $errors = PanelMenuItem::validate($config);
             } elseif ($textKey === 'title') {
-                $errors = ContextualNavItem::validate($config);
+                $errors = ContextualMenuItem::validate($config);
             }
 
             if ($errors !== []) {
@@ -147,7 +200,10 @@ final readonly class BuildContextualNavigation
             if ($permission) {
                 $allowed = true;
                 if (is_array($permission)) {
-                    $allowed = array_any($permission, fn ($perm): bool => is_string($perm) && $permissionChecker($perm));
+                    $allowed = array_any(
+                        $permission,
+                        fn ($perm): bool => is_string($perm) && $permissionChecker($perm)
+                    );
                 } elseif (is_string($permission)) {
                     $allowed = $permissionChecker($permission);
                 }
@@ -179,7 +235,7 @@ final readonly class BuildContextualNavigation
             if (! $routeName) {
                 $routeNameSuffix = $config['route_name_suffix'] ?? null;
                 if ($routeNameSuffix && is_string($routeNameSuffix)) {
-                    $routeName = sprintf('internal.%s.%s', $moduleSlug, $routeNameSuffix);
+                    $routeName = sprintf('internal.staff.%s.%s', $moduleSlug, $routeNameSuffix);
                 }
             }
 
@@ -197,6 +253,24 @@ final readonly class BuildContextualNavigation
                 }
 
                 $href = $this->generateRoute($routeName, $normalizedParams);
+            } elseif (
+                isset($config['href'])
+                && is_string($config['href']) && $config['href'] !== ''
+            ) {
+                $href = $config['href'];
+            } elseif (
+                isset($config['route'])
+                && is_string($config['route']) && $config['route'] !== ''
+            ) {
+                $paramsForRoute = $config['route_params'] ?? ($config['route_parameters'] ?? []);
+                $normalizedParams = [];
+                if (is_array($paramsForRoute)) {
+                    foreach ($paramsForRoute as $k => $v) {
+                        $normalizedParams[(string) $k] = $v;
+                    }
+                }
+
+                $href = $this->generateRoute($config['route'], $normalizedParams);
             }
 
             $item = [
@@ -220,14 +294,18 @@ final readonly class BuildContextualNavigation
             }
 
             if (isset($extraFields['current'])) {
-                // Lógica simplificada para current
-                $item[$extraFields['current']] = (
-                    is_string($routeName)
-                    && (
-                        Route::currentRouteName() === $routeName
-                        || str_starts_with(Route::currentRouteName() ?? '', $routeName.'.')
-                    )
-                );
+                $current = false;
+                if (is_string($routeName)) {
+                    $current = Route::currentRouteName() === $routeName
+                        || str_starts_with(Route::currentRouteName() ?? '', $routeName.'.');
+                } elseif (
+                    isset($config['current'])
+                    && is_bool($config['current'])
+                ) {
+                    $current = $config['current'];
+                }
+
+                $item[$extraFields['current']] = $current;
             }
 
             $builtItems[] = $item;
@@ -268,10 +346,11 @@ final readonly class BuildContextualNavigation
             Cache::increment('metrics:navigation:denied:module:'.$moduleSlug);
         }
 
-        Log::channel('domain_navigation')->info('permission_denied', [
-            'permission' => $permission,
-            'module' => $moduleSlug,
-            'context' => 'contextual_nav',
-        ]);
+        event(new MenuPermissionDenied(
+            permission: $permission,
+            moduleSlug: $moduleSlug,
+            user: null,
+            context: 'contextual_nav'
+        ));
     }
 }

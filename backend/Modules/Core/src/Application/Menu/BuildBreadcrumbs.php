@@ -2,32 +2,41 @@
 
 declare(strict_types=1);
 
-namespace Modules\Core\Application\Navigation;
+namespace Modules\Core\Application\Menu;
 
 use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
-use Modules\Core\Contracts\ModuleRegistryInterface;
-use Modules\Core\Domain\Navigation\NavigationConfigResolver;
+use Modules\Core\Contracts\AddonRegistryInterface;
+use Modules\Core\Domain\Menu\MenuConfigResolver;
 
+/**
+ * Construye breadcrumbs para rutas internas de módulos/addons.
+ *
+ * Soporta breadcrumbs declarativos por módulo (config) y fallback razonable.
+ * Usa caché basado en `core.cache` y `core.nav_version` para invalidación global.
+ */
 final readonly class BuildBreadcrumbs
 {
     /**
      * Constructor de la clase BuildBreadcrumbs.
      *
-     * @param  ModuleRegistryInterface  $moduleRegistry  Servicio de registro de módulos.
-     * @param  NavigationConfigResolver  $configResolver  Resolutor de configuración de navegación.
+     * @param  AddonRegistryInterface  $moduleRegistry  Servicio de registro de módulos.
+     * @param  MenuConfigResolver  $configResolver  Resolutor de configuración de navegación.
      */
     public function __construct(
-        private ModuleRegistryInterface $moduleRegistry,
-        private NavigationConfigResolver $configResolver
+        private AddonRegistryInterface $moduleRegistry,
+        private MenuConfigResolver $configResolver
     ) {
         //
     }
 
     /**
-     * Ejecuta la construcción de breadcrumbs.
+     * Construye los breadcrumbs para un módulo y un sufijo de ruta.
+     *
+     * Ejemplo de uso:
+     * - $breadcrumbs = $builder->execute('core', 'profile.edit');
      *
      * @param  string  $moduleSlug  Slug del módulo.
      * @param  string  $routeSuffix  Sufijo de la ruta.
@@ -42,15 +51,48 @@ final readonly class BuildBreadcrumbs
         array $viewData = []
     ): array {
         $t0 = microtime(true);
-        $moduleConfig = $this->moduleRegistry->getModuleConfig($moduleSlug);
+        $cacheConfigRaw = config('core.cache', []);
+        $cacheConfig = is_array($cacheConfigRaw) ? $cacheConfigRaw : [];
+        $navCachePrefix = is_string($cacheConfig['nav_cache_prefix'] ?? null)
+            ? $cacheConfig['nav_cache_prefix']
+            : 'core:nav:';
+        if (! str_ends_with($navCachePrefix, ':')) {
+            $navCachePrefix .= ':';
+        }
 
-        $cacheKey = implode('|', [
+        $navVersionKey = is_string($cacheConfig['nav_version_key'] ?? null)
+            ? $cacheConfig['nav_version_key']
+            : 'core.nav_version';
+        $ttlRaw = $cacheConfig['breadcrumbs_ttl_seconds'] ?? 300;
+        $ttlSeconds = is_int($ttlRaw)
+            ? $ttlRaw
+            : (is_numeric($ttlRaw)
+                ? (int) $ttlRaw
+                : 300
+            );
+        if ($ttlSeconds < 1) {
+            $ttlSeconds = 300;
+        }
+
+        $moduleConfig = $this->moduleRegistry->getAddonConfig($moduleSlug);
+
+        $rawNavVersion = Cache::get($navVersionKey, 0);
+        $navVersion = is_int($rawNavVersion)
+            ? $rawNavVersion
+            : (is_numeric($rawNavVersion)
+                ? (int) $rawNavVersion
+                : 0
+            );
+
+        $key = implode('|', [
             'breadcrumbs',
             $moduleSlug,
             $routeSuffix,
+            'nv'.$navVersion,
             md5((string) json_encode($routeParams)),
             md5((string) json_encode($moduleConfig)),
         ]);
+        $cacheKey = $navCachePrefix.'breadcrumbs:'.md5($key);
 
         $cached = Cache::get($cacheKey);
         if (is_array($cached)) {
@@ -61,8 +103,12 @@ final readonly class BuildBreadcrumbs
                 }
 
                 $out[] = [
-                    'title' => is_string($b['title'] ?? null) ? $b['title'] : '',
-                    'href' => is_string($b['href'] ?? null) ? $b['href'] : '#',
+                    'title' => is_string($b['title'] ?? null)
+                        ? $b['title']
+                        : '',
+                    'href' => is_string($b['href'] ?? null)
+                        ? $b['href']
+                        : '#',
                 ];
             }
 
@@ -83,7 +129,8 @@ final readonly class BuildBreadcrumbs
             || ! isset($moduleConfigArr['breadcrumbs'][$routeSuffix])
         ) {
             $fallback = $this->getFallbackBreadcrumb($moduleConfigArr, $moduleSlug);
-            Cache::put($cacheKey, $fallback, 300);
+            Cache::put($cacheKey, $fallback, now()->addSeconds($ttlSeconds));
+
             $this->logBuild($moduleSlug, $routeSuffix, count($fallback), false, $t0);
 
             return $fallback;
@@ -98,11 +145,14 @@ final readonly class BuildBreadcrumbs
 
         if (! is_array($resolvedBreadcrumbsConfig)) {
             $fallback = $this->getFallbackBreadcrumb($moduleConfigArr, $moduleSlug);
-            Cache::put($cacheKey, $fallback, 300);
+            Cache::put($cacheKey, $fallback, now()->addSeconds($ttlSeconds));
+
             $this->logBuild($moduleSlug, $routeSuffix, count($fallback), false, $t0);
 
             return $fallback;
         }
+
+        $resolvedBreadcrumbsConfig = $this->flattenResolvedConfig($resolvedBreadcrumbsConfig);
 
         $breadcrumbs = [];
 
@@ -111,12 +161,17 @@ final readonly class BuildBreadcrumbs
                 continue;
             }
 
-            $title = isset($config['title']) && is_string($config['title']) ? $config['title'] : '';
+            $title = isset($config['title']) && is_string($config['title'])
+                ? $config['title']
+                : '';
 
             // Manejar títulos dinámicos
             $dynamicKey = isset($config['dynamic_title'])
                 ? 'dynamic_title'
-                : (isset($config['dynamic_title_prop']) ? 'dynamic_title_prop' : null);
+                : (isset($config['dynamic_title_prop'])
+                    ? 'dynamic_title_prop'
+                    : null
+                );
 
             if (
                 $dynamicKey
@@ -135,21 +190,35 @@ final readonly class BuildBreadcrumbs
                 $href = $config['href'];
             } else {
                 $routeName = isset($config['route_name']) && is_string($config['route_name'])
-                    ? $config['route_name'] : null;
+                    ? $config['route_name']
+                    : null;
 
                 if (in_array($routeName, [null, '', '0'], true)) {
                     $routeNameSuffix = isset($config['route_name_suffix']) && is_string($config['route_name_suffix'])
-                        ? $config['route_name_suffix'] : null;
+                        ? $config['route_name_suffix']
+                        : null;
                     $routeName = in_array($routeNameSuffix, [null, '', '0'], true)
                         ? null
-                        : sprintf('internal.%s.%s', $moduleSlug, $routeNameSuffix);
+                        : sprintf('internal.staff.%s.%s', $moduleSlug, $routeNameSuffix);
                 }
 
                 $itemRouteParams = isset($config['route_params'])
                     ? (array) $config['route_params']
-                    : (isset($config['route_parameters']) ? (array) $config['route_parameters'] : []);
+                    : (isset($config['route_parameters'])
+                        ? (array) $config['route_parameters']
+                        : []
+                    );
 
                 $itemRouteParams = $this->normalizeRouteParameters($itemRouteParams);
+
+                if (
+                    $routeName === null
+                    && isset($config['route'])
+                    && is_string($config['route'])
+                    && $config['route'] !== ''
+                ) {
+                    $routeName = $config['route'];
+                }
 
                 $href = $routeName !== null
                     ? $this->generateRoute($routeName, $itemRouteParams)
@@ -162,7 +231,8 @@ final readonly class BuildBreadcrumbs
             ];
         }
 
-        Cache::put($cacheKey, $breadcrumbs, 300);
+        Cache::put($cacheKey, $breadcrumbs, now()->addSeconds($ttlSeconds));
+
         $this->logBuild($moduleSlug, $routeSuffix, count($breadcrumbs), false, $t0);
 
         return $breadcrumbs;
@@ -181,18 +251,21 @@ final readonly class BuildBreadcrumbs
         string $moduleSlug,
         string $currentRoute
     ): array {
-        // Lógica simplificada de compatibilidad
-        // Si no es una ruta del módulo, devolver solo el dashboard del módulo
-        if (! str_starts_with($currentRoute, sprintf('internal.%s.', $moduleSlug))) {
-            return [[
-                'title' => ucfirst($moduleSlug),
-                'href' => $this->generateRoute(sprintf('internal.%s.panel', $moduleSlug)),
-            ]];
+        if (! str_starts_with($currentRoute, sprintf('internal.staff.%s.', $moduleSlug))) {
+            $moduleConfig = $this->moduleRegistry->getAddonConfig($moduleSlug);
+
+            return $this->getFallbackBreadcrumb(
+                $moduleConfig,
+                $moduleSlug
+            );
         }
 
         // Intentar usar configuración explícita si existe
-        $routeSuffix = mb_substr($currentRoute, mb_strlen(sprintf('internal.%s.', $moduleSlug)));
-        $moduleConfig = $this->moduleRegistry->getModuleConfig($moduleSlug);
+        $routeSuffix = mb_substr(
+            $currentRoute,
+            mb_strlen(sprintf('internal.staff.%s.', $moduleSlug))
+        );
+        $moduleConfig = $this->moduleRegistry->getAddonConfig($moduleSlug);
 
         if (
             isset($moduleConfig['breadcrumbs'])
@@ -209,21 +282,27 @@ final readonly class BuildBreadcrumbs
         if ($contextualItems !== [] && isset($contextualItems[0])) {
             $firstItem = $contextualItems[0];
             $firstTitle = isset($firstItem['title']) && is_string($firstItem['title'])
-                ? $firstItem['title'] : ucfirst($moduleSlug);
+                ? $firstItem['title']
+                : ucfirst($moduleSlug);
             $firstHref = isset($firstItem['href']) && is_string($firstItem['href'])
-                ? $firstItem['href'] : '#';
+                ? $firstItem['href']
+                : '#';
 
             $breadcrumbs[] = ['title' => $firstTitle, 'href' => $firstHref];
 
             foreach ($contextualItems as $item) {
                 $item = (array) $item;
                 $isCurrent = isset($item['current']) && $item['current'] === true;
-                $itemTitle = isset($item['title']) && is_string($item['title']) ? $item['title'] : '';
+                $itemTitle = isset($item['title']) && is_string($item['title'])
+                    ? $item['title']
+                    : '';
 
                 if ($isCurrent && ($firstTitle !== $itemTitle)) {
                     $breadcrumbs[] = [
                         'title' => $itemTitle,
-                        'href' => (isset($item['href']) && is_string($item['href'])) ? $item['href'] : '#',
+                        'href' => (isset($item['href']) && is_string($item['href']))
+                            ? $item['href']
+                            : '#',
                     ];
                     break;
                 }
@@ -231,6 +310,39 @@ final readonly class BuildBreadcrumbs
         }
 
         return $breadcrumbs;
+    }
+
+    /**
+     * @param  array<mixed>  $resolvedConfig
+     * @return array<mixed>
+     */
+    private function flattenResolvedConfig(array $resolvedConfig): array
+    {
+        $flattened = [];
+
+        foreach ($resolvedConfig as $item) {
+            if (is_array($item) && array_is_list($item)) {
+                $allNestedArrays = true;
+                foreach ($item as $nested) {
+                    if (! is_array($nested)) {
+                        $allNestedArrays = false;
+                        break;
+                    }
+                }
+
+                if ($allNestedArrays) {
+                    foreach ($item as $nested) {
+                        $flattened[] = $nested;
+                    }
+
+                    continue;
+                }
+            }
+
+            $flattened[] = $item;
+        }
+
+        return $flattened;
     }
 
     /**
@@ -242,10 +354,21 @@ final readonly class BuildBreadcrumbs
      */
     private function getFallbackBreadcrumb(array $config, string $slug): array
     {
+        $routeName = null;
+        if (isset($config['nav_item']) && is_array($config['nav_item'])) {
+            $navItemRouteName = $config['nav_item']['route_name'] ?? null;
+            $routeName = is_string($navItemRouteName) && $navItemRouteName !== ''
+                ? $navItemRouteName
+                : null;
+        }
+
+        $routeName ??= sprintf('internal.staff.%s.index', $slug);
+
         return [[
             'title' => (isset($config['functional_name']) && is_string($config['functional_name']))
-                ? $config['functional_name'] : ucfirst($slug),
-            'href' => $this->generateRoute(sprintf('internal.%s.panel', $slug)),
+                ? $config['functional_name']
+                : ucfirst($slug),
+            'href' => $this->generateRoute($routeName),
         ]];
     }
 
@@ -321,8 +444,13 @@ final readonly class BuildBreadcrumbs
      * @param  bool  $hit  Indica si hubo acierto en caché.
      * @param  float  $t0  Tiempo de inicio en microsegundos.
      */
-    private function logBuild(string $slug, string $suffix, int $count, bool $hit, float $t0): void
-    {
+    private function logBuild(
+        string $slug,
+        string $suffix,
+        int $count,
+        bool $hit,
+        float $t0
+    ): void {
         $durationMs = (microtime(true) - $t0) * 1000;
         Log::channel('domain_navigation')->info('breadcrumbs_build', [
             'module_slug' => $slug,

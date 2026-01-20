@@ -2,15 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Modules\Core\Domain\Navigation\DTO;
+namespace Modules\Core\Domain\Menu\DTO;
 
-final class ContextualNavItem
+/**
+ * DTO de validación para ítems de navegación contextual.
+ *
+ * Verifica presencia de título/ruta y tipos en permisos, iconos y flags.
+ */
+final class ContextualMenuItem
 {
     /**
      * Valida la configuración de un ítem de navegación contextual.
      * Reglas:
      * - Debe tener 'title' o 'title_template'
-     * - Debe tener 'route_name' o 'route_name_suffix'
+     * - Debe tener 'route_name' o 'route_name_suffix' o 'href' o 'route'
      * - 'permission' debe ser string|array|null (si es array, todos los elementos deben ser string)
      * - 'icon' opcional string
      * - 'route_params' opcional array
@@ -45,8 +50,16 @@ final class ContextualNavItem
             && is_string($config['route_name_suffix'])
             && $config['route_name_suffix'] !== '';
 
-        if (! $hasRouteName && ! $hasRouteSuffix) {
-            $errors[] = "Falta 'route_name' o 'route_name_suffix'";
+        $hasHref = isset($config['href'])
+            && is_string($config['href'])
+            && $config['href'] !== '';
+
+        $hasRoute = isset($config['route'])
+            && is_string($config['route'])
+            && $config['route'] !== '';
+
+        if (! $hasRouteName && ! $hasRouteSuffix && ! $hasHref && ! $hasRoute) {
+            $errors[] = "Falta 'route_name', 'route_name_suffix', 'href' o 'route'";
         }
 
         // permission
