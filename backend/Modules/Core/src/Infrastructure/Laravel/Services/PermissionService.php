@@ -10,7 +10,10 @@ use Illuminate\Support\Facades\Cache;
 use Modules\Core\Contracts\PermissionVerifierInterface;
 
 /**
- * Servicio de verificación de permisos.
+ * Servicio de verificación de permisos (implementación Laravel).
+ *
+ * Implementa verificación estándar y cross-guard con invalidación
+ * de caché por usuario cuando cambia su estado de permisos/roles.
  */
 final class PermissionService implements PermissionVerifierInterface
 {

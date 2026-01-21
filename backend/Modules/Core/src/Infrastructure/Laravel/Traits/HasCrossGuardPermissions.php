@@ -192,7 +192,13 @@ trait HasCrossGuardPermissions
      */
     public function getAllCrossGuardPermissions(): array
     {
-        $cacheKey = 'user.'.$this->id.'.all_cross_guard_permissions';
+        $rawVersion = Cache::get('user.'.$this->id.'.perm_version', 0);
+        $version = is_int($rawVersion)
+            ? $rawVersion
+            : (
+                is_numeric($rawVersion) ? (int) $rawVersion : 0
+            );
+        $cacheKey = 'user.'.$this->id.'.v'.$version.'.all_cross_guard_permissions';
 
         $result = Cache::remember(
             $cacheKey,
