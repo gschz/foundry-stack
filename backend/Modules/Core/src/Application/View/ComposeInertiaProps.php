@@ -6,9 +6,10 @@ namespace Modules\Core\Application\View;
 
 use App\Http\Resources\StaffUserResource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
-use Modules\Core\Contracts\ModuleRegistryInterface;
-use Modules\Core\Contracts\NavigationBuilderInterface;
+use Modules\Core\Contracts\AddonRegistryInterface;
+use Modules\Core\Contracts\MenuBuilderInterface;
 use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
 
 /**
@@ -17,8 +18,8 @@ use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
 final readonly class ComposeInertiaProps
 {
     public function __construct(
-        private ModuleRegistryInterface $moduleRegistry,
-        private NavigationBuilderInterface $navigationBuilder
+        private AddonRegistryInterface $moduleRegistry,
+        private MenuBuilderInterface $navigationBuilder
     ) {
         //
     }
@@ -36,8 +37,13 @@ final readonly class ComposeInertiaProps
 
         $navProps = $this->composeNavigationProps($staffUser);
         $authProps = $this->composeAuthProps($staffUser, $request);
+        $securityProps = $this->composeSecurityProps($staffUser);
+        $notificationPrefsProps = $this->composeNotificationPreferencesProps($staffUser);
 
-        return array_merge($navProps, $authProps);
+        /** @var array<string, mixed> $props */
+        $props = $navProps + $authProps + $securityProps + $notificationPrefsProps;
+
+        return $props;
     }
 
     /**
@@ -49,6 +55,9 @@ final readonly class ComposeInertiaProps
     {
         if (! $staffUser instanceof StaffUser) {
             return [
+                'breadcrumbs' => [],
+                'mainNavItems' => [],
+                'moduleNavItems' => [],
                 'contextualNavItems' => [],
                 'globalNavItems' => [],
                 'passwordChangeRequired' => false,
@@ -57,9 +66,14 @@ final readonly class ComposeInertiaProps
 
         $permissionChecker = fn (string $permission): bool => $staffUser->hasPermissionToCross($permission);
 
-        // Construir items de navegación contextual (módulos)
-        $modules = $this->moduleRegistry->getAvailableModulesForUser($staffUser);
-        $contextualItems = $this->navigationBuilder->buildNavItems(
+        $modules = $this->moduleRegistry->getAvailableAddonsForUser($staffUser);
+
+        $mainNavItems = $this->navigationBuilder->buildNavItems(
+            $modules,
+            $permissionChecker
+        );
+
+        $moduleNavItems = $this->navigationBuilder->buildModuleNavItems(
             $modules,
             $permissionChecker
         );
@@ -75,7 +89,10 @@ final readonly class ComposeInertiaProps
         $passwordChangeRequired = $this->checkPasswordChangeRequired($staffUser);
 
         return [
-            'contextualNavItems' => $contextualItems,
+            'breadcrumbs' => [],
+            'mainNavItems' => $mainNavItems,
+            'moduleNavItems' => $moduleNavItems,
+            'contextualNavItems' => [],
             'globalNavItems' => $globalItems,
             'passwordChangeRequired' => $passwordChangeRequired,
         ];
@@ -98,9 +115,74 @@ final readonly class ComposeInertiaProps
                 'user' => $transformedStaffUser,
                 'staff' => $transformedStaffUser,
                 'can' => $staffUser instanceof StaffUser
-                    ? ($staffUser->getAttribute('frontend_permissions') ?? []) : [],
+                    ? ($staffUser->getAttribute('frontend_permissions') ?? [])
+                    : [],
                 'impersonate' => $staffUser && $request->session()->has('impersonated_by'),
             ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function composeSecurityProps(?StaffUser $staffUser): array
+    {
+        if (! $staffUser instanceof StaffUser) {
+            return [
+                'security' => [
+                    'twoFactorRequired' => (bool) config('security.two_factor.staff.required', false),
+                    'twoFactorEnabled' => false,
+                    'twoFactorPending' => false,
+                ],
+            ];
+        }
+
+        $secretEncrypted = $staffUser->getAttribute('two_factor_secret');
+        $confirmedAt = $staffUser->getAttribute('two_factor_confirmed_at');
+
+        $pending = is_string($secretEncrypted)
+            && $secretEncrypted !== ''
+            && $confirmedAt === null;
+
+        return [
+            'security' => [
+                'twoFactorRequired' => (bool) config('security.two_factor.staff.required', false),
+                'twoFactorEnabled' => $confirmedAt !== null,
+                'twoFactorPending' => $pending,
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function composeNotificationPreferencesProps(
+        ?StaffUser $staffUser
+    ): array {
+        if (! $staffUser instanceof StaffUser) {
+            return [
+                'notificationPreferences' => [],
+            ];
+        }
+
+        $rawId = $staffUser->getAuthIdentifier();
+        $userId = is_string($rawId)
+            ? $rawId
+            : (is_int($rawId)
+                ? (string) $rawId
+                : null
+            );
+
+        if ($userId === null) {
+            return [
+                'notificationPreferences' => [],
+            ];
+        }
+
+        $prefs = Cache::get('user.'.$userId.'.notification_preferences', []);
+
+        return [
+            'notificationPreferences' => is_array($prefs) ? $prefs : [],
         ];
     }
 
@@ -117,11 +199,12 @@ final readonly class ComposeInertiaProps
         $maxAgeDays = is_int($rawMaxAge)
             ? $rawMaxAge
             : (is_numeric($rawMaxAge)
-                ? (int) $rawMaxAge : 90
+                ? (int) $rawMaxAge
+                : 90
             );
 
         /** @var \Illuminate\Support\Carbon|string|null $passwordChangedAt */
-        $passwordChangedAt = $staffUser->password_changed_at;
+        $passwordChangedAt = $staffUser->getAttribute('password_changed_at');
 
         if ($passwordChangedAt) {
             $passwordAge = Date::parse($passwordChangedAt)

@@ -5,25 +5,33 @@ declare(strict_types=1);
 namespace Modules\Core\Infrastructure\Laravel\Services;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
-use Modules\Core\Contracts\ModuleRegistryInterface;
-use Modules\Core\Contracts\NavigationBuilderInterface;
+use Modules\Core\Contracts\AddonRegistryInterface;
+use Modules\Core\Contracts\MenuBuilderInterface;
 use Modules\Core\Contracts\ViewComposerInterface;
 
 /**
- * Servicio para componer y preparar datos para las vistas.
- * Implementación concreta para Laravel/Inertia.
+ * Servicio para componer y preparar datos para las vistas (Laravel/Inertia).
+ *
+ * Estandariza props compartidas y estructura de navegación con caché
+ * versionada por usuario/ruta y estado de módulos.
  */
 final readonly class ViewComposerService implements ViewComposerInterface
 {
     public function __construct(
-        private NavigationBuilderInterface $navigationService,
-        private ModuleRegistryInterface $moduleRegistry,
+        private MenuBuilderInterface $navigationService,
+        private AddonRegistryInterface $moduleRegistry,
     ) {
         //
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * Nota: Normaliza items del panel asegurando claves string.
+     */
     public function prepareModuleViewData(
         string $moduleSlug,
         array $panelItemsConfig,
@@ -64,13 +72,17 @@ final readonly class ViewComposerService implements ViewComposerInterface
             );
 
         // Obtener descripción desde el config del módulo
-        $moduleConfig = $this->moduleRegistry->getModuleConfig($moduleSlug);
+        $moduleConfig = $this->moduleRegistry->getAddonConfig($moduleSlug);
         $moduleDescription = $moduleConfig['description'] ?? null;
+
+        $statsList = is_array($stats)
+            ? array_values($stats)
+            : [];
 
         return [
             ...[
                 'panelItems' => $panelItems,
-                'stats' => (object) ($stats ?? []),
+                'stats' => $statsList,
                 'pageTitle' => $functionalName,
                 'description' => $moduleDescription,
                 'flash' => $this->getFlashMessages(request()),
@@ -79,6 +91,12 @@ final readonly class ViewComposerService implements ViewComposerInterface
         ];
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * Nota: Aplica caché versionada con claves que incluyen:
+     * usuario, módulo, routeSuffix, nav_version, mtime de módulos y perm_version.
+     */
     public function composeModuleViewContext(
         string $moduleSlug,
         array $panelItemsConfig,
@@ -92,25 +110,96 @@ final readonly class ViewComposerService implements ViewComposerInterface
         array $routeParams = []
     ): array {
         // Normalizar nombre funcional y obtener descripción desde config del módulo
-        $moduleConfig = $this->moduleRegistry->getModuleConfig($moduleSlug);
+        $moduleConfig = $this->moduleRegistry->getAddonConfig($moduleSlug);
         $fn = $moduleConfig['functional_name'] ?? null;
         $functionalName = is_string($functionalName)
             ? $functionalName
-            : (is_string($fn) ? $fn : ucfirst($moduleSlug));
+            : (is_string($fn)
+                ? $fn
+                : ucfirst($moduleSlug)
+            );
         $moduleDescription = $moduleConfig['description'] ?? null;
 
         // Obtener todos los elementos de navegación
-        $navigationElements = $this->navigationService
-            ->assembleNavigationStructure(
+        $prefixRaw = config('core.cache.nav_cache_prefix');
+        $prefix = is_string($prefixRaw) && $prefixRaw !== ''
+            ? $prefixRaw
+            : 'core:nav:';
+        $versionKeyRaw = config('core.cache.nav_version_key');
+        $versionKey = is_string($versionKeyRaw) && $versionKeyRaw !== ''
+            ? $versionKeyRaw
+            : 'core.nav_version';
+        $navVersionRaw = Cache::get($versionKey, 1);
+        $navVersion = is_int($navVersionRaw)
+            ? $navVersionRaw
+            : (is_numeric($navVersionRaw)
+                ? (int) $navVersionRaw
+                : 1
+            );
+        $ttlRaw = config('core.cache.nav_assembled_ttl_seconds');
+        $ttl = is_numeric($ttlRaw)
+            ? (int) $ttlRaw
+            : 300;
+        $userIdRaw = is_object($user) && method_exists($user, 'getAuthIdentifier')
+            ? $user->getAuthIdentifier()
+            : null;
+        $userId = is_string($userIdRaw) || is_int($userIdRaw)
+            ? (string) $userIdRaw
+            : 'anonymous';
+        $permVersionRaw = $userId !== 'anonymous'
+            ? Cache::get('user.'.$userId.'.perm_version', 0)
+            : 0;
+        $permVersion = is_int($permVersionRaw)
+            ? $permVersionRaw
+            : (is_numeric($permVersionRaw)
+                ? (int) $permVersionRaw
+                : 0
+            );
+        $suffix = is_string($routeSuffix) && $routeSuffix !== ''
+            ? $routeSuffix
+            : 'panel';
+        $statusesFileRaw = config('modules.activators.file.statuses-file');
+        $modulesStatusesPath = is_string($statusesFileRaw) && $statusesFileRaw !== ''
+            ? $statusesFileRaw
+            : base_path('modules_statuses.json');
+        $modulesMtime = file_exists($modulesStatusesPath)
+            ? (int) @filemtime($modulesStatusesPath)
+            : 0;
+
+        $cacheKey = sprintf(
+            '%s%s:%s:%s:%d:%d:%d',
+            $prefix,
+            $userId,
+            $moduleSlug,
+            $suffix,
+            $navVersion,
+            $modulesMtime,
+            $permVersion
+        );
+
+        $navigationElements = Cache::remember(
+            $cacheKey,
+            $ttl,
+            fn (): array => $this->navigationService->assembleNavigationStructure(
                 permissionChecker: $permissionChecker,
                 moduleSlug: $moduleSlug,
                 contextualItemsConfig: $contextualNavItemsConfig,
                 user: $user,
                 functionalName: $functionalName,
-                routeSuffix: $routeSuffix,
+                routeSuffix: $suffix,
                 routeParams: $routeParams,
                 viewData: $data
-            );
+            )
+        );
+
+        $navigationElements = is_array($navigationElements)
+            ? $navigationElements : [
+                'mainNavItems' => [],
+                'moduleNavItems' => [],
+                'contextualNavItems' => [],
+                'globalNavItems' => [],
+                'breadcrumbs' => [],
+            ];
 
         // Construir ítems del panel
         $panelItems = $this->navigationService
@@ -121,6 +210,10 @@ final readonly class ViewComposerService implements ViewComposerInterface
                 functionalName: $functionalName
             );
 
+        $statsList = is_array($stats)
+            ? array_values($stats)
+            : [];
+
         // Combinar todos los datos
         return [
             ...[
@@ -130,7 +223,7 @@ final readonly class ViewComposerService implements ViewComposerInterface
                 'contextualNavItems' => $navigationElements['contextualNavItems'],
                 'globalNavItems' => $navigationElements['globalNavItems'],
                 'breadcrumbs' => $navigationElements['breadcrumbs'],
-                'stats' => (object) ($stats ?? []),
+                'stats' => $statsList,
                 'pageTitle' => $functionalName,
                 'description' => $moduleDescription,
                 'flash' => $this->getFlashMessages(request()),
@@ -139,6 +232,9 @@ final readonly class ViewComposerService implements ViewComposerInterface
         ];
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function composeDashboardViewContext(
         $user,
         array $availableModules,
@@ -154,6 +250,11 @@ final readonly class ViewComposerService implements ViewComposerInterface
             $permissionChecker
         );
 
+        $moduleNavItems = $this->navigationService->buildModuleNavItems(
+            $availableModules,
+            $permissionChecker
+        );
+
         // Construir items de navegación global
         $globalItemsConfig = $this->moduleRegistry->getGlobalNavItems($user);
         $globalNavItems = $this->navigationService->buildGlobalNavItems(
@@ -162,7 +263,7 @@ final readonly class ViewComposerService implements ViewComposerInterface
         );
 
         // Construir tarjetas de módulos (disponibles y restringidos)
-        $allModules = $this->moduleRegistry->getAllEnabledModules();
+        $allModules = $this->moduleRegistry->getAllEnabledAddons();
         $moduleCards = $this->navigationService->buildModuleCards(
             $allModules,
             $availableModules
@@ -179,7 +280,15 @@ final readonly class ViewComposerService implements ViewComposerInterface
         ));
 
         return [
+            'pageTitle' => 'Dashboard',
+            'description' => 'Panel principal del sistema interno.',
+            'breadcrumbs' => [[
+                'title' => 'Dashboard',
+                'href' => route('internal.staff.dashboard'),
+            ]],
             'mainNavItems' => $mainNavItems,
+            'moduleNavItems' => $moduleNavItems,
+            'contextualNavItems' => [],
             'globalNavItems' => $globalNavItems,
             'modules' => $moduleCards,
             'accessibleModules' => $accessibleModulesCards,
@@ -188,6 +297,9 @@ final readonly class ViewComposerService implements ViewComposerInterface
         ];
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function renderModuleView(
         string $view,
         string $moduleViewPath,
@@ -199,6 +311,9 @@ final readonly class ViewComposerService implements ViewComposerInterface
         );
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function getFlashMessages(Request $request): array
     {
         return [

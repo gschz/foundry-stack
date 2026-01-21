@@ -20,7 +20,7 @@ interface ViewComposerInterface
      * @param  array<int, array<string, mixed>>|array<string, mixed>  $panelItemsConfig  Configuración de los ítems del panel (lista de ítems o un solo ítem)
      * @param  callable  $permissionChecker  Función para verificar permisos
      * @param  string  $functionalName  Nombre funcional del módulo
-     * @param  array<string, mixed>|null  $stats  Estadísticas del módulo
+     * @param  array<int, mixed>|array<string, mixed>|null  $stats  Estadísticas del módulo
      * @param  array<string, mixed>  $data  Datos adicionales
      * @return array<string, mixed> Datos para la vista
      */
@@ -43,7 +43,7 @@ interface ViewComposerInterface
      * @param  mixed  $user  Usuario autenticado
      * @param  string|null  $functionalName  Nombre funcional del módulo
      * @param  array<string, mixed>  $data  Datos adicionales
-     * @param  array<string, mixed>|null  $stats  Estadísticas del módulo
+     * @param  array<int, mixed>|array<string, mixed>|null  $stats  Estadísticas del módulo
      * @param  string|null  $routeSuffix  Sufijo de ruta para los breadcrumbs configurados
      * @param  array<string, mixed>  $routeParams  Parámetros de ruta para los breadcrumbs
      * @return array<string, mixed> Datos completos para la vista
