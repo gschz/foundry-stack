@@ -2,19 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Modules\Core\Infrastructure\Laravel\Http\Controllers\Settings;
+namespace Modules\Core\Infrastructure\Laravel\Http\Controllers\Profile;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth as FacadesAuth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
-use Modules\Core\Infrastructure\Laravel\Facades\Nav;
-use Modules\Core\Infrastructure\Laravel\Http\Requests\Settings\ProfileUpdateRequest;
+use Modules\Core\Application\Profile\UpdateProfile;
+use Modules\Core\Infrastructure\Laravel\Http\Requests\Profile\ProfileUpdateRequest;
 
-final class ProfileController extends BaseSettingsController
+final class ProfileController extends AbstractProfileController
 {
     /**
      * Muestra la página de configuración del perfil del usuario.
@@ -23,16 +22,13 @@ final class ProfileController extends BaseSettingsController
     {
         $this->requireStaffUser($request);
 
-        $breadcrumbs = Nav::buildConfiguredBreadcrumbs(
-            'core',
-            'user.settings.profile.edit'
-        );
+        $breadcrumbs = $this->buildBreadcrumbs('profile.edit');
 
-        return Inertia::render('settings/profile', [
+        return Inertia::render('profile/edit', [
             // El modelo StaffUsers implementa MustVerifyEmail; siempre verdadero
             'mustVerifyEmail' => true,
             'status' => $request->session()->get('status'),
-            'contextualNavItems' => $this->getSettingsNavigationItems(),
+            'contextualNavItems' => $this->getProfileNavigationItems(),
             'breadcrumbs' => $breadcrumbs,
         ]);
     }
@@ -40,33 +36,14 @@ final class ProfileController extends BaseSettingsController
     /**
      * Actualiza la configuración del perfil del usuario.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
-    {
+    public function update(
+        UpdateProfile $updateProfile,
+        ProfileUpdateRequest $request
+    ): RedirectResponse {
         $user = $this->requireStaffUser($request);
-        $user->fill($request->validated());
+        $updateProfile->handle($user, $request->validated());
 
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
-        }
-
-        $user->save();
-
-        Log::channel('domain_settings')->info('Perfil actualizado', [
-            'user_id' => $user->getAuthIdentifier(),
-            'email' => $user->email,
-            'changes' => $request->validated(),
-        ]);
-
-        activity()
-            ->causedBy($user)
-            ->performedOn($user)
-            ->event('profile_updated')
-            ->withProperties([
-                'changes' => $request->validated(),
-            ])
-            ->log('Actualización de perfil en Settings');
-
-        return to_route('internal.user.settings.profile.edit');
+        return to_route('internal.staff.profile.edit');
     }
 
     /**
@@ -80,7 +57,7 @@ final class ProfileController extends BaseSettingsController
 
         $user = $this->requireStaffUser($request);
 
-        Log::channel('domain_settings')->info('Perfil eliminado', [
+        Log::channel('domain_profile')->info('Perfil eliminado', [
             'user_id' => $user->getAuthIdentifier(),
             'email' => $user->email,
         ]);
@@ -92,7 +69,7 @@ final class ProfileController extends BaseSettingsController
             ->withProperties([
                 'deleted_at' => now()->toISOString(),
             ])
-            ->log('Eliminación de perfil en Settings');
+            ->log('Eliminación perfil de usuario');
 
         FacadesAuth::guard('staff')->logout();
 
