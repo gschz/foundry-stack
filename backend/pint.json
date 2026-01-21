@@ -1,7 +1,7 @@
 {
   "preset": "laravel",
-  "paths": ["app", "Modules", "config", "routes", "../database"],
-  "exclude": ["bootstrap", "storage", "vendor", "tmp"],
+  "paths": ["app", "Modules", "config", "routes", "../database", "bootstrap"],
+  "exclude": ["bootstrap/cache", "storage", "vendor", "tmp"],
   "rules": {
     "array_push": true,
     "backtick_to_shell_exec": true,

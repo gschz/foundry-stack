@@ -55,24 +55,27 @@ final class SecurityHeaders
             $permissionsPolicy = 'camera=(), microphone=(), geolocation=(), payment=()';
 
             // Rutas más sensibles tienen restricciones adicionales
-            if ($request->is('internal/admin*') || $request->is('*/settings*')) {
+            if ($request->is('internal/admin*') || $request->is('internal/staff*')) {
                 $permissionsPolicy .= ', autoplay=(), fullscreen=()';
             }
 
             $response->headers->set('Permissions-Policy', $permissionsPolicy);
         }
 
-        // 3. Cabeceras dinámicas basadas en entorno
-        /*
-         Content Security Policy dinámica según URL específica
-         Solo aplicar si no fue establecida por Nginx o si tenemos reglas especiales
-        if (!$response->headers->has('Content-Security-Policy') && !$isErrorOrRedirect) {
+        if (! $response->headers->has('Content-Security-Policy') && ! $isErrorOrRedirect) {
             $this->applyCspHeaders($request, $response);
-        } */
+        }
 
         // Solo aplicar HSTS en producción y si es necesario
-        if (app()->isProduction() && ! $response->headers->has('Strict-Transport-Security') && ! $isErrorOrRedirect) {
-            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        if (
+            app()->isProduction()
+            && ! $response->headers->has('Strict-Transport-Security')
+            && ! $isErrorOrRedirect
+        ) {
+            $response->headers->set(
+                'Strict-Transport-Security',
+                'max-age=31536000; includeSubDomains'
+            );
         }
 
         // 4. Cabeceras de seguridad específicas para archivos descargables
@@ -90,9 +93,18 @@ final class SecurityHeaders
     private function isDownloadResponse(Response $response): bool
     {
         $contentType = $response->headers->get('Content-Type', '');
-        $downloadTypes = ['application/zip', 'application/pdf', 'application/msword', 'application/vnd.ms-excel'];
 
-        return array_any($downloadTypes, fn ($type): bool => mb_stripos((string) $contentType, (string) $type) !== false);
+        $downloadTypes = [
+            'application/zip',
+            'application/pdf',
+            'application/msword',
+            'application/vnd.ms-excel',
+        ];
+
+        return array_any(
+            $downloadTypes,
+            fn ($type): bool => mb_stripos((string) $contentType, (string) $type) !== false
+        );
     }
 
     /**
@@ -104,5 +116,24 @@ final class SecurityHeaders
         // Idealmente estos datos vendrían de tu implementación real de rate limiting
         $response->headers->set('X-RateLimit-Limit', '60');
         $response->headers->set('X-RateLimit-Remaining', '59');
+    }
+
+    private function applyCspHeaders(Request $request, Response $response): void
+    {
+        $isDev = app()->environment('local', 'development');
+        $base = "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-ancestors 'self'; form-action 'self'";
+        $sensitive = $request->is('internal/admin*') || $request->is('internal/staff*');
+        $devOrigin = 'http://localhost:5173';
+        $connect = $isDev
+            ? "connect-src 'self' ".$devOrigin
+            : "connect-src 'self'";
+        $script = $isDev
+            ? "script-src 'self' 'unsafe-eval' ".$devOrigin
+            : "script-src 'self'";
+        $extra = $sensitive
+            ? "; frame-src 'none'; object-src 'none'"
+            : '';
+        $policy = $base.'; '.$connect.'; '.$script.$extra;
+        $response->headers->set('Content-Security-Policy', $policy);
     }
 }

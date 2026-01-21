@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\Admin\App\Http\Requests;
 
-use App\Models\StaffUsers;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
 
 /**
  * Request para validación de datos de formulario de usuarios del staff.
@@ -20,7 +20,7 @@ final class UserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        /** @var StaffUsers|null $user */
+        /** @var StaffUser|null $user */
         $user = Auth::user();
 
         return $user && $user->can('access-admin');
@@ -138,7 +138,7 @@ final class UserRequest extends FormRequest
             if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
                 // Solo aplicar en actualizaciones
                 $user = $this->route('user');
-                if ($user instanceof StaffUsers) {
+                if ($user instanceof StaffUser) {
                     // Consideramos protegido a cualquier usuario que tenga roles ADMIN o DEV
                     /** @var array<int, string> $roleNames */
                     $roleNames = array_filter((array) $this->input(

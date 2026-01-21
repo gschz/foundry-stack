@@ -31,6 +31,8 @@ return RectorConfig::configure()
         __DIR__.'/app',
         __DIR__.'/Modules',
         __DIR__.'/bootstrap/app.php',
+        __DIR__.'/bootstrap/modules',
+        __DIR__.'/bootstrap/providers.php',
         __DIR__.'/config',
         __DIR__.'/../database',
         __DIR__.'/public',
@@ -43,6 +45,7 @@ return RectorConfig::configure()
         ],
         RectorLaravel\Rector\ArrayDimFetch\ServerVariableToRequestFacadeRector::class => [
             __DIR__.'/bootstrap/app.php',
+            __DIR__.'/bootstrap/modules/env.php',
         ],
     ])
     ->withPreparedSets(

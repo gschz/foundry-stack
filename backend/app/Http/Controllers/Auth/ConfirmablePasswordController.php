@@ -68,7 +68,7 @@ final class ConfirmablePasswordController extends Controller
 
         // Finalmente, se redirige al usuario a la URL a la que intentaba acceder originalmente.
         return redirect()->intended(route(
-            'internal.dashboard',
+            'internal.staff.dashboard',
             absolute: false
         ));
     }

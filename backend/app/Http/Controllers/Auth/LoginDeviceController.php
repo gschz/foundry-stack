@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\StaffUsersLoginInfo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUsersLoginInfo;
 
 /**
  * Controlador para gestionar la confianza de los dispositivos de inicio de sesión.
@@ -31,20 +31,24 @@ final class LoginDeviceController extends Controller
      */
     public function trust(Request $request, StaffUsersLoginInfo $loginInfo): RedirectResponse
     {
-        /** @var \App\Models\StaffUsers $user */
+        /** @var StaffUser $user */
         $user = $request->user();
 
         // Comprobación de autorización crucial: se asegura de que el usuario autenticado
         // sea el propietario del registro de inicio de sesión que intenta modificar.
         // Si no lo es, la solicitud se aborta con un código de estado 403 (Prohibido).
-        abort_if($user->id !== $loginInfo->staff_user_id, 403, 'No tienes permiso para realizar esta acción.');
+        abort_if(
+            $user->id !== $loginInfo->staff_user_id,
+            403,
+            'No tienes permiso para realizar esta acción.'
+        );
 
         // Si la autorización es exitosa, se actualiza el campo `is_trusted` a `true`.
         $loginInfo->update(['is_trusted' => true]);
 
         // Finalmente, se redirige al usuario al dashboard con un mensaje de estado
         // que confirma que la operación fue exitosa.
-        return to_route('internal.dashboard')
+        return to_route('internal.staff.dashboard')
             ->with('status', 'Dispositivo marcado como confiable. Ya no recibirás alertas cuando inicies sesión desde este dispositivo.');
     }
 }

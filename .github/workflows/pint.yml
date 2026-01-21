@@ -2,11 +2,12 @@ name: Format PHP (Pint)
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - "backend/**"
-      - "database/**"
+  pull_request:
+    paths:
+      - "backend/**"
 
 permissions:
   contents: write

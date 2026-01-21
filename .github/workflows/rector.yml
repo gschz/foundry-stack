@@ -2,8 +2,12 @@ name: Rector (dry-run)
 
 on:
   pull_request:
+    paths:
+      - "backend/**"
   push:
     branches: [main]
+    paths:
+      - "backend/**"
 
 jobs:
   rector:

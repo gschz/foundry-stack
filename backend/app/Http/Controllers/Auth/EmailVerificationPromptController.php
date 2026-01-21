@@ -30,7 +30,9 @@ final class EmailVerificationPromptController extends Controller
         // Se comprueba si el usuario ya ha verificado su correo electrónico.
         $user = $this->requireStaffUser($request);
         if ($user->hasVerifiedEmail()) {
-            return redirect()->intended(route('internal.dashboard', absolute: false));
+            return redirect()->intended(
+                route('internal.staff.dashboard', absolute: false)
+            );
         }
 
         // Si el usuario no está verificado, se renderiza la vista de Inertia 'auth/verify-email'.

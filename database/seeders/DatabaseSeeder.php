@@ -5,23 +5,25 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Artisan;
+
+/**
+ * Ejecutar con Bun desde la raíz del proyecto:
+ * - bun run be artisan db:seed # Seed de todos los seeders definidos en esta clase.
+ * - bun run be artisan module:seed Core # Seed de todos los seeders definidos en el módulo.
+ * - bun run be artisan module:seed Core --class=CoreDatabaseSeeder # Seed para un seeder específico del módulo.
+ *
+ * Nota: Usa 'bun run be artisan' o 'bun run be pg' como script base 
+ * para ejecutar cualquier comando de Artisan evitando duplicar scripts.
+ */
 
 final class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed de la base de datos de la aplicación.
-     */
     public function run(): void
     {
-        // Ejecutar primero la siembra de roles y permisos, y luego los usuarios del sistema.
         $this->call([
-            RolePermissionSeeder::class,
-            SystemUsersSeeder::class,
-
+            \Modules\Core\Database\Seeders\CoreDatabaseSeeder::class,
+            // \Modules\Module01\Database\Seeders\Module01DatabaseSeeder::class,
+            // \Modules\Module02\Database\Seeders\Module02DatabaseSeeder::class,
         ]);
-
-        $this->command->info('Sincronizando permisos entre guards...');
-        Artisan::call('permissions:sync-guards');
     }
 }

@@ -1,0 +1,9 @@
+{
+  "name": "Core",
+  "alias": "core",
+  "priority": 0,
+  "providers": [
+    "Modules\\Core\\Infrastructure\\Laravel\\Providers\\CoreServiceProvider",
+    "Modules\\Core\\Infrastructure\\Laravel\\Providers\\RouteServiceProvider"
+  ]
+}

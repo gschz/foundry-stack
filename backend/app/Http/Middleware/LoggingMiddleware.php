@@ -49,14 +49,12 @@ final class LoggingMiddleware
     {
         // Rutas que no necesitan logging detallado en producción
         $quietRoutes = [
-            'internal.settings.profile.edit',
-            'internal.settings.password.edit',
-            'internal.settings.appearance',
-            'internal.admin.panel',
-            'internal.module01.index',
-            'internal.module02.index',
-            'internal.module03.index',
-            'internal.module04.index',
+            'internal.staff.profile.edit',
+            'internal.staff.password.edit',
+            'internal.staff.appearance',
+            'internal.staff.admin.panel',
+            'internal.staff.module01.index',
+            'internal.staff.module02.index',
         ];
 
         $currentRoute = $request->route()?->getName();
