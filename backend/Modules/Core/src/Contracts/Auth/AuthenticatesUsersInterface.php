@@ -8,9 +8,10 @@ use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
  * Interfaz para la autenticación de usuarios.
+ *
  * Define los métodos para gestionar el inicio de sesión, logout y obtención del usuario actual.
  */
-interface AuthenticatesUsers
+interface AuthenticatesUsersInterface
 {
     /**
      * Intenta autenticar a un usuario con las credenciales proporcionadas.

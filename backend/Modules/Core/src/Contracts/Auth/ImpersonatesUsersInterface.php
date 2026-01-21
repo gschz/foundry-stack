@@ -9,7 +9,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 /**
  * Interfaz para la suplantación de identidad (impersonation).
  */
-interface ImpersonatesUsers
+interface ImpersonatesUsersInterface
 {
     /**
      * Inicia la suplantación de un usuario.
