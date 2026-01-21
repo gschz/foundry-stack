@@ -10,8 +10,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Cache;
 use Laravel\Sanctum\HasApiTokens;
 use Modules\Core\Database\Factories\StaffUsersFactory;
+use Modules\Core\Infrastructure\Laravel\Traits\CanBeImpersonated;
 use Modules\Core\Infrastructure\Laravel\Traits\HasCrossGuardPermissions;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -33,6 +35,7 @@ use Spatie\Permission\Traits\HasRoles;
  */
 final class StaffUser extends Authenticatable implements AuthenticatableUser, MustVerifyEmail
 {
+    use CanBeImpersonated;
     use HasApiTokens;
     use HasCrossGuardPermissions;
 
@@ -70,6 +73,20 @@ final class StaffUser extends Authenticatable implements AuthenticatableUser, Mu
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+    ];
+
+    /**
+     * Los atributos que deben ser convertidos.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password_changed_at' => 'datetime',
+        'last_activity' => 'datetime',
+        'two_factor_confirmed_at' => 'datetime',
     ];
 
     /**
@@ -122,9 +139,13 @@ final class StaffUser extends Authenticatable implements AuthenticatableUser, Mu
         array $deviceInfo
     ): StaffUsersLoginInfo {
         // Buscar si ya existe un registro para este dispositivo e IP
-        $loginInfo = $this->loginInfos()
-            ->where('ip_address', $ip)
-            ->get()
+        $query = $this->loginInfos()
+            ->where('ip_address', $ip);
+        if ($userAgent !== null) {
+            $query->whereNotNull('user_agent');
+        }
+
+        $loginInfo = $query->get()
             ->filter(fn (StaffUsersLoginInfo $info): bool => $info->matches(
                 $ip,
                 $userAgent
@@ -221,5 +242,40 @@ final class StaffUser extends Authenticatable implements AuthenticatableUser, Mu
     protected function getAvatarAttribute(): string
     {
         return 'https://ui-avatars.com/api/?name='.urlencode($this->name).'&color=7F9CF5&background=EBF4FF';
+    }
+
+    /**
+     * Obtiene los permisos frontend del usuario.
+     *
+     * @return list<string>
+     */
+    protected function getFrontendPermissionsAttribute(): array
+    {
+        $authIdentifier = $this->getAuthIdentifier();
+        if (! is_int($authIdentifier) && ! is_string($authIdentifier)) {
+            return [];
+        }
+
+        $userId = (string) $authIdentifier;
+        $versionRaw = Cache::get('user.'.$userId.'.perm_version', 0);
+        $version = is_int($versionRaw)
+            ? $versionRaw
+            : (is_numeric($versionRaw)
+                ? (int) $versionRaw
+                : 0
+            );
+        $cacheKey = 'user.'.$userId.'.v'.$version.'.frontend_permissions';
+
+        $result = Cache::remember(
+            $cacheKey,
+            now()->addMinutes(10),
+            fn (): array => $this->getAllCrossGuardPermissions()
+        );
+
+        if (! is_array($result)) {
+            return [];
+        }
+
+        return array_values(array_filter($result, is_string(...)));
     }
 }

@@ -6,14 +6,14 @@ namespace Modules\Core\Infrastructure\Laravel\Services;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Auth;
-use Modules\Core\Contracts\Auth\AuthenticatesUsers;
-use Modules\Core\Contracts\Auth\ImpersonatesUsers;
+use Modules\Core\Contracts\Auth\AuthenticatesUsersInterface;
+use Modules\Core\Contracts\Auth\ImpersonatesUsersInterface;
 
 /**
  * Servicio de autenticación.
  * Implementa las interfaces de autenticación y suplantación del Core.
  */
-final class AuthService implements AuthenticatesUsers, ImpersonatesUsers
+final class AuthService implements AuthenticatesUsersInterface, ImpersonatesUsersInterface
 {
     private const string IMPERSONATION_SESSION_KEY = 'impersonated_by';
 

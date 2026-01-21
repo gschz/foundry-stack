@@ -6,16 +6,37 @@ namespace Modules\Core\Infrastructure\Laravel\Providers;
 
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\ServiceProvider;
-use Modules\Core\Contracts\Auth\AuthenticatesUsers;
-use Modules\Core\Contracts\Auth\ImpersonatesUsers;
-use Modules\Core\Contracts\ModuleRegistryInterface;
-use Modules\Core\Contracts\NavigationBuilderInterface;
+use Modules\Core\Application\AccountSecurity\ConfirmTwoFactorAuth;
+use Modules\Core\Application\AccountSecurity\DisableTwoFactorAuth;
+use Modules\Core\Application\AccountSecurity\RegenerateTwoFactorRecoveryCodes;
+use Modules\Core\Application\AccountSecurity\RevokeOtherSessions;
+use Modules\Core\Application\AccountSecurity\SetupTwoFactorAuth;
+use Modules\Core\Application\NotificationPreferences\UpdateNotificationPreferences;
+use Modules\Core\Contracts\AccountSecurity\ConfirmTwoFactorAuthInterface;
+use Modules\Core\Contracts\AccountSecurity\DisableTwoFactorAuthInterface;
+use Modules\Core\Contracts\AccountSecurity\LoginAttemptInterface;
+use Modules\Core\Contracts\AccountSecurity\RegenerateTwoFactorRecoveryCodesInterface;
+use Modules\Core\Contracts\AccountSecurity\RevokeOtherSessionsInterface;
+use Modules\Core\Contracts\AccountSecurity\SecurityAuditInterface;
+use Modules\Core\Contracts\AccountSecurity\SetupTwoFactorAuthInterface;
+use Modules\Core\Contracts\AddonRegistryInterface;
+use Modules\Core\Contracts\AuditTrailInterface;
+use Modules\Core\Contracts\Auth\AuthenticatesUsersInterface;
+use Modules\Core\Contracts\Auth\ImpersonatesUsersInterface;
+use Modules\Core\Contracts\MenuBuilderInterface;
+use Modules\Core\Contracts\ModuleOrchestratorInterface;
+use Modules\Core\Contracts\NotificationPreferences\UpdateNotificationPreferencesInterface;
 use Modules\Core\Contracts\PermissionVerifierInterface;
 use Modules\Core\Contracts\ViewComposerInterface;
+use Modules\Core\Infrastructure\Laravel\Console\Commands\SyncGuardPermissionsCommand;
+use Modules\Core\Infrastructure\Laravel\Services\AddonRegistryService;
+use Modules\Core\Infrastructure\Laravel\Services\AuditTrailService;
 use Modules\Core\Infrastructure\Laravel\Services\AuthService;
-use Modules\Core\Infrastructure\Laravel\Services\ModuleRegistryService;
-use Modules\Core\Infrastructure\Laravel\Services\NavigationBuilderService;
+use Modules\Core\Infrastructure\Laravel\Services\LoginAttemptService;
+use Modules\Core\Infrastructure\Laravel\Services\MenuBuilderService;
+use Modules\Core\Infrastructure\Laravel\Services\ModuleOrchestratorService;
 use Modules\Core\Infrastructure\Laravel\Services\PermissionService;
+use Modules\Core\Infrastructure\Laravel\Services\SecurityAuditService;
 use Modules\Core\Infrastructure\Laravel\Services\ViewComposerService;
 
 /**
@@ -40,43 +61,39 @@ final class CoreServiceProvider extends ServiceProvider
             module_path($this->moduleName, 'database/migrations')
         );
 
-        // Registrar servicios principales
-        $this->app->singleton(
-            ModuleRegistryInterface::class,
-            ModuleRegistryService::class
-        );
-        $this->app->singleton(
-            NavigationBuilderInterface::class,
-            NavigationBuilderService::class
-        );
-        $this->app->singleton(
-            ViewComposerInterface::class,
-            ViewComposerService::class
-        );
+        // Map interface => concrete singletons
+        $singletons = [
+            AddonRegistryInterface::class => AddonRegistryService::class,
+            MenuBuilderInterface::class => MenuBuilderService::class,
+            ModuleOrchestratorInterface::class => ModuleOrchestratorService::class,
+            ViewComposerInterface::class => ViewComposerService::class,
+            AuditTrailInterface::class => AuditTrailService::class,
+            SecurityAuditInterface::class => SecurityAuditService::class,
+            LoginAttemptInterface::class => LoginAttemptService::class,
+            AuthService::class => AuthService::class,
+            PermissionService::class => PermissionService::class,
+        ];
 
-        // Registrar servicios de Auth y Permisos
-        $this->app->singleton(
-            AuthService::class,
-            AuthService::class
-        );
-        $this->app->singleton(
-            PermissionService::class,
-            PermissionService::class
-        );
+        foreach ($singletons as $abstract => $concrete) {
+            $this->app->singleton($abstract, $concrete);
+        }
 
-        // Bindings de interfaces de Auth
-        $this->app->bind(
-            AuthenticatesUsers::class,
-            AuthService::class
-        );
-        $this->app->bind(
-            ImpersonatesUsers::class,
-            AuthService::class
-        );
-        $this->app->bind(
-            PermissionVerifierInterface::class,
-            PermissionService::class
-        );
+        // Map interface => concrete binds
+        $binds = [
+            AuthenticatesUsersInterface::class => AuthService::class,
+            ImpersonatesUsersInterface::class => AuthService::class,
+            PermissionVerifierInterface::class => PermissionService::class,
+            SetupTwoFactorAuthInterface::class => SetupTwoFactorAuth::class,
+            ConfirmTwoFactorAuthInterface::class => ConfirmTwoFactorAuth::class,
+            DisableTwoFactorAuthInterface::class => DisableTwoFactorAuth::class,
+            RegenerateTwoFactorRecoveryCodesInterface::class => RegenerateTwoFactorRecoveryCodes::class,
+            RevokeOtherSessionsInterface::class => RevokeOtherSessions::class,
+            UpdateNotificationPreferencesInterface::class => UpdateNotificationPreferences::class,
+        ];
+
+        foreach ($binds as $abstract => $concrete) {
+            $this->app->bind($abstract, $concrete);
+        }
     }
 
     /**
@@ -86,16 +103,27 @@ final class CoreServiceProvider extends ServiceProvider
     {
         $this->registerConfig();
 
+        $this->commands([
+            SyncGuardPermissionsCommand::class,
+        ]);
+
+        $facades = [
+            'Addon' => \Modules\Core\Infrastructure\Laravel\Facades\Addon::class,
+            'Menu' => \Modules\Core\Infrastructure\Laravel\Facades\Menu::class,
+            'Audit' => \Modules\Core\Infrastructure\Laravel\Facades\Audit::class,
+            'SecurityAudit' => \Modules\Core\Infrastructure\Laravel\Facades\SecurityAudit::class,
+            'ViewComposer' => \Modules\Core\Infrastructure\Laravel\Facades\ViewComposer::class,
+        ];
+
         // Registrar alias de Facades
         $loader = AliasLoader::getInstance();
-        $loader->alias(
-            'Mod',
-            \Modules\Core\Infrastructure\Laravel\Facades\Mod::class
-        );
-        $loader->alias(
-            'Nav',
-            \Modules\Core\Infrastructure\Laravel\Facades\Nav::class
-        );
+
+        foreach ($facades as $alias => $facade) {
+            $loader->alias(
+                $alias,
+                $facade
+            );
+        }
     }
 
     /**
