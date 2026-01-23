@@ -19,11 +19,7 @@ use Spatie\Permission\PermissionRegistrar;
 final class AdminStaffUserService implements StaffUserManagerInterface
 {
     /**
-     * Devuelve todos los usuarios con sus roles.
-     *
-     * @param  array<string, mixed>  $params  Parámetros para filtrado y ordenación
-     * @param  int  $perPage  Número de elementos por página
-     * @return LengthAwarePaginator<array-key, StaffUser>
+     * {@inheritDoc}
      */
     public function getAllUsers(
         array $params = [],
@@ -77,10 +73,12 @@ final class AdminStaffUserService implements StaffUserManagerInterface
     }
 
     /**
-     * Crea un nuevo usuario con los datos proporcionados.
+     * {@inheritDoc}
      *
-     * @param  array<string, mixed>  $data  Datos del nuevo usuario
-     * @return StaffUser Usuario creado
+     * Efectos secundarios:
+     * - Establece `email_verified_at` si `auto_verify_email` es verdadero (por defecto).
+     * - Inicializa `password_changed_at` al momento de creación.
+     * - Sincroniza roles si se proporcionan en `data['roles']`.
      */
     public function createUser(array $data): StaffUser
     {
@@ -120,10 +118,7 @@ final class AdminStaffUserService implements StaffUserManagerInterface
     }
 
     /**
-     * Obtiene un usuario por su ID.
-     *
-     * @param  int  $id  ID del usuario
-     * @return StaffUser|null Usuario encontrado o null
+     * {@inheritDoc}
      */
     public function getUserById(int $id): ?StaffUser
     {
@@ -131,11 +126,7 @@ final class AdminStaffUserService implements StaffUserManagerInterface
     }
 
     /**
-     * Actualiza un usuario existente.
-     *
-     * @param  int  $id  ID del usuario
-     * @param  array<string, mixed>  $data  Datos actualizados
-     * @return StaffUser|null Usuario actualizado o null
+     * {@inheritDoc}
      */
     public function updateUser(int $id, array $data): ?StaffUser
     {
@@ -160,10 +151,7 @@ final class AdminStaffUserService implements StaffUserManagerInterface
     }
 
     /**
-     * Elimina un usuario por su ID.
-     *
-     * @param  int  $id  ID del usuario
-     * @return bool Éxito de la operación
+     * {@inheritDoc}
      */
     public function deleteUser(int $id): bool
     {
@@ -176,10 +164,7 @@ final class AdminStaffUserService implements StaffUserManagerInterface
     }
 
     /**
-     * Sincroniza los roles de un usuario, preservando los roles protegidos.
-     *
-     * @param  StaffUser  $user  Usuario a actualizar
-     * @param  array<int, string|int|Role>  $roles  Roles a asignar
+     * {@inheritDoc}
      */
     public function syncRoles(StaffUser $user, array $roles): void
     {
@@ -241,9 +226,7 @@ final class AdminStaffUserService implements StaffUserManagerInterface
     }
 
     /**
-     * Obtiene el número total de usuarios registrados en el sistema.
-     *
-     * @return int Total de usuarios
+     * {@inheritDoc}
      */
     public function getTotalUsers(): int
     {
@@ -251,9 +234,7 @@ final class AdminStaffUserService implements StaffUserManagerInterface
     }
 
     /**
-     * Obtiene el número total de roles definidos en el sistema.
-     *
-     * @return int Total de roles
+     * {@inheritDoc}
      */
     public function getTotalRoles(): int
     {
@@ -261,9 +242,7 @@ final class AdminStaffUserService implements StaffUserManagerInterface
     }
 
     /**
-     * Obtiene todos los roles disponibles en el sistema.
-     *
-     * @return Collection<int, Role> Colección de roles
+     * {@inheritDoc}
      */
     public function getAllRoles(): Collection
     {

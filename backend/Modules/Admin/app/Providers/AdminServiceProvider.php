@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Admin\App\Providers;
 
-use App\Interfaces\StatsServiceInterface;
-use App\Services\AdminStatsService;
 use Illuminate\Support\ServiceProvider;
+use Modules\Admin\App\Http\Controllers\AdminDashboardController;
 use Modules\Admin\App\Interfaces\StaffUserManagerInterface;
 use Modules\Admin\App\Services\AdminStaffUserService;
+use Modules\Admin\App\Services\AdminStatsService;
+use Modules\Core\Contracts\StatsServiceInterface;
 
 /**
  * Provider principal del módulo Admin.
@@ -36,11 +37,9 @@ final class AdminServiceProvider extends ServiceProvider
             AdminStaffUserService::class
         );
 
-        // Registrar el servicio de estadísticas para el módulo Admin
-        $this->app->bind(
-            StatsServiceInterface::class,
-            AdminStatsService::class
-        );
+        $this->app->when(AdminDashboardController::class)
+            ->needs(StatsServiceInterface::class)
+            ->give(AdminStatsService::class);
     }
 
     public function boot(): void
