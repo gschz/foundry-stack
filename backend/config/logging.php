@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+use Monolog\Formatter\JsonFormatter;
+use Monolog\Handler\StreamHandler;
+use Monolog\Handler\SyslogUdpHandler;
+use Monolog\Processor\PsrLogMessageProcessor;
+
 return [
 
     /*
@@ -82,19 +87,19 @@ return [
         'papertrail' => [
             'driver' => 'monolog',
             'level' => env('LOG_LEVEL', 'debug'),
-            'handler' => env('LOG_PAPERTRAIL_HANDLER', Monolog\Handler\SyslogUdpHandler::class),
+            'handler' => env('LOG_PAPERTRAIL_HANDLER', SyslogUdpHandler::class),
             'handler_with' => [
                 'host' => env('PAPERTRAIL_URL'),
                 'port' => env('PAPERTRAIL_PORT'),
                 'connectionString' => 'tls://'.env('PAPERTRAIL_URL').':'.env('PAPERTRAIL_PORT'),
             ],
-            'processors' => [Monolog\Processor\PsrLogMessageProcessor::class],
+            'processors' => [PsrLogMessageProcessor::class],
         ],
 
         'stderr' => [
             'driver' => 'monolog',
             'level' => env('LOG_LEVEL', 'debug'),
-            'handler' => Monolog\Handler\StreamHandler::class,
+            'handler' => StreamHandler::class,
             'formatter' => env('LOG_STDERR_FORMATTER'),
             'formatter_with' => [
                 'format' => null,
@@ -105,7 +110,7 @@ return [
             'handler_with' => [
                 'stream' => 'php://stderr',
             ],
-            'processors' => [Monolog\Processor\PsrLogMessageProcessor::class],
+            'processors' => [PsrLogMessageProcessor::class],
         ],
 
         'syslog' => [
@@ -130,12 +135,71 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
-        // Canal específico para logs de navegación (solo en desarrollo)
-        'navigation' => [
-            'driver' => 'single',
-            'path' => storage_path('logs/navigation.log'),
-            'level' => env('APP_ENV') === 'production' ? 'warning' : 'debug',
+        'domain_auth' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
+            'handler' => StreamHandler::class,
+            'handler_with' => [
+                'stream' => storage_path('logs/domain_auth.log'),
+            ],
+            'formatter' => JsonFormatter::class,
+            'processors' => [PsrLogMessageProcessor::class],
+        ],
+        'domain_navigation' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+            'handler' => StreamHandler::class,
+            'handler_with' => [
+                'stream' => storage_path('logs/domain_navigation.log'),
+            ],
+            'formatter' => JsonFormatter::class,
+            'processors' => [PsrLogMessageProcessor::class],
+        ],
+        'domain_module_access' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+            'handler' => StreamHandler::class,
+            'handler_with' => [
+                'stream' => storage_path('logs/domain_module_access.log'),
+            ],
+            'formatter' => JsonFormatter::class,
+            'processors' => [PsrLogMessageProcessor::class],
+        ],
+        'domain_profile' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+            'handler' => StreamHandler::class,
+            'handler_with' => [
+                'stream' => storage_path('logs/domain_profile.log'),
+            ],
+            'formatter' => JsonFormatter::class,
+            'processors' => [PsrLogMessageProcessor::class],
+        ],
+        'domain_audit' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+            'handler' => StreamHandler::class,
+            'handler_with' => [
+                'stream' => storage_path('logs/domain_audit.log'),
+            ],
+            'formatter' => JsonFormatter::class,
+            'processors' => [PsrLogMessageProcessor::class],
+        ],
+        'security_core' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+            'handler' => StreamHandler::class,
+            'handler_with' => [
+                'stream' => storage_path('logs/security_core.log'),
+            ],
+            'formatter' => JsonFormatter::class,
+            'processors' => [PsrLogMessageProcessor::class],
         ],
     ],
 
