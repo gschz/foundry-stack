@@ -13,7 +13,7 @@ return [
     // Configuración del ítem de navegación principal
     'nav_item' => [
         'show_in_nav' => true,
-        'route_name' => 'internal.module01.index',
+        'route_name' => 'internal.staff.module01.index',
         'icon' => 'ClipboardList',
     ],
 
