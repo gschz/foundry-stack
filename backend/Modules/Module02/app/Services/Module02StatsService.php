@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace Modules\Module02\App\Services;
 
-use App\DTO\EnhancedStat;
-use App\Interfaces\StatsServiceInterface;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Modules\Core\Contracts\StatsServiceInterface;
+use Modules\Core\Domain\Stats\EnhancedStat;
 
+/**
+ * Servicio de estadísticas del dashboard para Module02.
+ *
+ * Expone un conjunto de estadísticas consumibles por el panel del módulo.
+ */
 final class Module02StatsService implements StatsServiceInterface
 {
     /**

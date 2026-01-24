@@ -10,7 +10,7 @@ return [
     'base_permission' => 'access-module-02',
     'nav_item' => [
         'show_in_nav' => true,
-        'route_name' => 'internal.module02.index',
+        'route_name' => 'internal.staff.module02.index',
         'icon' => 'FilePlus2',
     ],
     'nav_components' => [
