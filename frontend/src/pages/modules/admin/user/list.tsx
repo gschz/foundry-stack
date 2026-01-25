@@ -204,7 +204,7 @@ export default function UserListPage({
     isLoading,
     handleServerPaginationChange,
   } = useServerTable({
-    routeName: 'internal.admin.users.index',
+    routeName: 'internal.staff.admin.users.index',
     initialPageIndex: Math.max(0, currentPage - 1),
     initialPageSize: perPage,
     initialSorting,
@@ -371,7 +371,7 @@ export default function UserListPage({
         userName={userData?.name ?? ''}
         showGreeting={false}
         actions={
-          <Link href={route('internal.admin.users.create')}>
+          <Link href={route('internal.staff.admin.users.create')}>
             <Button variant="default" className="gap-1.5">
               <PlusCircle className="h-4 w-4" />
               Nuevo Usuario

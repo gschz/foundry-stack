@@ -83,7 +83,7 @@ const deleteUser = (user: StaffUser) => {
   // Usamos confirm() para una verificación de seguridad simple del lado del cliente.
   const userName = typeof user.name === 'string' ? user.name : 'seleccionado';
   if (confirm(`¿Estás seguro de que deseas eliminar al usuario "${userName}"?`)) {
-    router.delete(route('internal.admin.users.destroy', { id: user.id }), {
+    router.delete(route('internal.staff.admin.users.destroy', { id: user.id }), {
       preserveScroll: true,
       // El backend debe responder con un mensaje flash para notificar el resultado.
     });
@@ -130,8 +130,8 @@ export const useUserForm = (
     const isEditing = !!initialUser;
     const method = isEditing ? 'put' : 'post';
     const url = isEditing
-      ? route('internal.admin.users.update', { id: initialUser.id })
-      : route('internal.admin.users.store');
+      ? route('internal.staff.admin.users.update', { id: initialUser.id })
+      : route('internal.staff.admin.users.store');
 
     // Convertir IDs de roles a nombres de roles antes de enviar
     const formData = {
@@ -158,7 +158,7 @@ export const useUserForm = (
       return;
     }
     if (confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
-      router.delete(route('internal.admin.users.destroy', { id: initialUser?.id }));
+      router.delete(route('internal.staff.admin.users.destroy', { id: initialUser?.id }));
     }
   };
 
