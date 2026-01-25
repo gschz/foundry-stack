@@ -52,7 +52,7 @@ export default function AppSidebarLayout({
                 Actualízala para mantener el acceso sin restricciones.
               </p>
               <Button asChild variant="destructive" size="sm" className="mt-2">
-                <Link href={route('internal.settings.password.edit')}>Actualizar contraseña</Link>
+                <Link href={route('internal.staff.password.edit')}>Actualizar contraseña</Link>
               </Button>
             </AlertDescription>
           </Alert>

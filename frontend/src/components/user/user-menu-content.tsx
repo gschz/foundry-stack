@@ -43,13 +43,14 @@ export function UserMenuContent({ user }: Readonly<UserMenuContentProps>) {
             <DropdownMenuItem asChild>
               <Link
                 className="block w-full"
-                href={route('internal.settings.profile.edit')}
+                href={route('internal.staff.profile.edit')}
                 as="button"
                 prefetch
                 onClick={cleanup}
               >
                 <Settings className="mr-2" />
                 Configuración
+                Configuración de perfil
               </Link>
             </DropdownMenuItem>
           </DropdownMenuGroup>

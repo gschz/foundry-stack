@@ -104,7 +104,7 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href={route('internal.dashboard')}>
+              <Link href={route('internal.staff.dashboard')}>
                 <AppLogo />
               </Link>
             </SidebarMenuButton>
