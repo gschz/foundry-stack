@@ -1,4 +1,4 @@
-import type { NavItemDefinition } from '@/types';
+import type { BreadcrumbItem, NavItemDefinition } from '@/types';
 import type { PageProps } from '@inertiajs/core';
 
 export interface BasicInfoForm {
@@ -10,6 +10,7 @@ export interface ProfilePageProps extends PageProps {
   mustVerifyEmail?: boolean;
   status?: string;
   contextualNavItems?: NavItemDefinition[];
+  breadcrumbs?: BreadcrumbItem[];
 }
 
 export interface BasicInfoCardProps {

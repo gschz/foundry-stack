@@ -4,45 +4,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import PasswordField from '@/components/ui/password-field';
 import { useToastNotifications } from '@/hooks/use-toast-notifications';
 import AppLayout from '@/layouts/app-layout';
-import SettingsLayout from '@/layouts/settings/layout';
+import ProfileLayout from '@/layouts/profile-layout';
 import type { BreadcrumbItem, NavItemDefinition } from '@/types';
 import { extractUserData } from '@/utils/user-data';
 import type { PageProps } from '@inertiajs/core';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { type FormEventHandler, useEffect, useState } from 'react';
 
-const breadcrumbs: BreadcrumbItem[] = [
-  {
-    title: 'Configuración de contraseña',
-    href: '/settings/password',
-  },
-];
-
 interface PasswordPageProps extends PageProps {
+  breadcrumbs?: BreadcrumbItem[];
   contextualNavItems?: NavItemDefinition[];
 }
 
 export default function PasswordPage() {
-  // Obtener contextualNavItems y flash de las props de la página
-  const { auth, contextualNavItems, flash } = usePage<PasswordPageProps>().props;
+  const { auth, contextualNavItems, flash, breadcrumbs } = usePage<PasswordPageProps>().props;
   const form = useForm({
     current_password: '',
     password: '',
     password_confirmation: '',
   });
 
-  // Hook de notificaciones
   const { showSuccess, showError } = useToastNotifications();
 
-  // Estado para mostrar detalles de fortaleza de contraseña
   const [showPasswordDetails, setShowPasswordDetails] = useState(false);
-
-  // Estado para errores de validación del cliente
   const [clientErrors, setClientErrors] = useState({
     password_confirmation: '',
   });
 
-  // Procesar mensajes flash del backend
   useEffect(() => {
     if (flash.success) {
       showSuccess(flash.success);
@@ -59,14 +47,12 @@ export default function PasswordPage() {
     let isValid = true;
     const newClientErrors = { password_confirmation: '' };
 
-    // Comprobar si la confirmación de contraseña está vacía cuando hay contraseña
     if (form.data.password && !form.data.password_confirmation) {
       // eslint-disable-next-line sonarjs/no-hardcoded-passwords
       newClientErrors.password_confirmation = 'Debes confirmar la nueva contraseña';
       isValid = false;
     }
 
-    // Comprobar si las contraseñas coinciden
     if (
       form.data.password &&
       form.data.password_confirmation &&
@@ -92,7 +78,7 @@ export default function PasswordPage() {
       return;
     }
 
-    form.put(route('internal.settings.password.update'), {
+    form.put(route('internal.staff.password.update'), {
       preserveScroll: true,
       onSuccess: () => {
         form.reset();
@@ -106,7 +92,6 @@ export default function PasswordPage() {
     });
   };
 
-  // Función para alternar la visualización de detalles de contraseña
   const togglePasswordDetails = () => {
     setShowPasswordDetails(!showPasswordDetails);
   };
@@ -114,12 +99,12 @@ export default function PasswordPage() {
   return (
     <AppLayout
       user={extractUserData(auth.user)}
-      breadcrumbs={breadcrumbs}
+      breadcrumbs={breadcrumbs ?? []}
       contextualNavItems={contextualNavItems ?? []}
     >
-      <Head title="Configuración de contraseña" />
+      <Head title="Contraseña" />
 
-      <SettingsLayout>
+      <ProfileLayout>
         <div className="space-y-8">
           <HeadingSmall
             title="Actualizar contraseña"
@@ -133,7 +118,6 @@ export default function PasswordPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={updatePassword} className="space-y-6">
-                {/* Contraseña actual */}
                 <div className="space-y-1">
                   <PasswordField
                     id="current_password"
@@ -150,7 +134,6 @@ export default function PasswordPage() {
                   />
                 </div>
 
-                {/* Nueva contraseña */}
                 <div className="space-y-1">
                   <PasswordField
                     id="password"
@@ -177,7 +160,6 @@ export default function PasswordPage() {
                   </div>
                 </div>
 
-                {/* Confirmar contraseña */}
                 <div className="space-y-1">
                   <PasswordField
                     id="password_confirmation"
@@ -207,7 +189,7 @@ export default function PasswordPage() {
             </CardContent>
           </Card>
         </div>
-      </SettingsLayout>
+      </ProfileLayout>
     </AppLayout>
   );
 }
