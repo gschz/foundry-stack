@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Auth;
 
-use App\Services\LoginAttemptService;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Http\FormRequest;
@@ -12,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Modules\Core\Contracts\AccountSecurity\LoginAttemptInterface;
 
 /**
  * Maneja la lógica de validación y autenticación para el inicio de sesión.
@@ -91,7 +91,7 @@ final class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $loginAttemptService = app(LoginAttemptService::class);
+        $loginAttemptService = app(LoginAttemptInterface::class);
         $credentials = $this->getCredentials();
         $rawIdentifier = $this->input('email');
         $identifier = is_string($rawIdentifier)
@@ -173,7 +173,7 @@ final class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        $loginAttemptService = app(LoginAttemptService::class);
+        $loginAttemptService = app(LoginAttemptInterface::class);
         $rawIdentifier = $this->input('email');
         $identifier = is_string($rawIdentifier) ? $rawIdentifier : '';
         $ipRaw = $this->ip();
@@ -229,7 +229,7 @@ final class LoginRequest extends FormRequest
 
         return is_string($intended)
             ? $intended
-            : route('internal.dashboard');
+            : route('internal.staff.dashboard');
     }
 
     /**
@@ -279,7 +279,7 @@ final class LoginRequest extends FormRequest
      * Manejar fallos de login.
      */
     private function handleFailedLogin(
-        LoginAttemptService $loginAttemptService,
+        LoginAttemptInterface $loginAttemptService,
         string $identifier,
         string $ip,
         string $reason
