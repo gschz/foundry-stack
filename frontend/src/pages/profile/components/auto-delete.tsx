@@ -6,10 +6,10 @@ import { useState } from 'react';
 
 export default function DeleteUser() {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
-  const { delete: destroy, processing } = useForm();
+  const { delete: destroy, processing } = useForm({});
 
   const handleDeleteConfirm = () => {
-    destroy(route('internal.settings.profile.destroy'), {
+    destroy(route('internal.staff.profile.destroy'), {
       preserveScroll: true,
       onSuccess: () => {
         setIsConfirmingDelete(false);

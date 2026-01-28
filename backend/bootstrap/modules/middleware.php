@@ -55,7 +55,7 @@ return function (Middleware $middleware): void {
     $middleware->redirectUsersTo(
         function (Request $request): string {
             if (Illuminate\Support\Facades\Auth::guard('staff')->check()) {
-                return route('internal.dashboard');
+                return route('internal.staff.dashboard');
             }
 
             return route('welcome');

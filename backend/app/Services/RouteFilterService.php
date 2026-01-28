@@ -7,6 +7,7 @@ namespace App\Services;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use Tighten\Ziggy\Ziggy;
 
 /**
@@ -174,7 +175,7 @@ final class RouteFilterService
 
         // Si estamos en modo debug, loguear información útil
         if (config('app.debug')) {
-            \Illuminate\Support\Facades\Log::debug('Ziggy route filtering', [
+            Log::channel('domain_navigation')->debug('Ziggy route filtering', [
                 'patterns' => $patterns,
                 'total_routes' => count($routes),
                 'filtered_routes' => count($filteredRoutes),

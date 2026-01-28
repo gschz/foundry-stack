@@ -31,7 +31,7 @@ export function UserActionsCell({ row, authUserId }: Readonly<UserActionsCellPro
     // Si es un usuario DEV, mostrar advertencia y redirigir después de unos segundos
     if (isDevUser) {
       router.get(
-        route('internal.admin.users.edit', user.id),
+        route('internal.staff.admin.users.edit', user.id),
         {},
         {
           onSuccess: () => {
@@ -42,13 +42,13 @@ export function UserActionsCell({ row, authUserId }: Readonly<UserActionsCellPro
 
             // Redirigir después de 5 segundos
             setTimeout(() => {
-              router.get(route('internal.admin.users.index'));
+              router.get(route('internal.staff.admin.users.index'));
             }, 5000);
           },
         },
       );
     } else {
-      router.get(route('internal.admin.users.edit', user.id));
+      router.get(route('internal.staff.admin.users.edit', user.id));
     }
   }, [user.id, isDevUser, showWarning]);
 
@@ -58,7 +58,7 @@ export function UserActionsCell({ row, authUserId }: Readonly<UserActionsCellPro
 
   const handleDelete = useCallback(() => {
     setIsDeleting(true);
-    router.delete(route('internal.admin.users.destroy', user.id), {
+    router.delete(route('internal.staff.admin.users.destroy', user.id), {
       preserveScroll: true,
       onSuccess: () => {
         showSuccess('Usuario eliminado con éxito.');

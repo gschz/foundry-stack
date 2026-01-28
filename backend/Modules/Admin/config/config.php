@@ -13,7 +13,7 @@ return [
     // Configuración del ítem de navegación principal
     'nav_item' => [
         'show_in_nav' => true,
-        'route_name' => 'internal.admin.panel',
+        'route_name' => 'internal.staff.admin.index',
         'icon' => 'ShieldCheck',
     ],
 
@@ -23,7 +23,7 @@ return [
         'links' => [
             'panel' => [
                 'title' => 'Módulo de Administración',
-                'route_name_suffix' => 'panel',
+                'route_name_suffix' => 'index',
                 'icon' => 'LayoutDashboard',
                 'permission' => 'access-admin',
             ],
@@ -41,7 +41,7 @@ return [
             ],
             'back_to_panel' => [
                 'title' => 'Volver al panel',
-                'route_name_suffix' => 'panel',
+                'route_name_suffix' => 'index',
                 'icon' => 'ArrowLeft',
                 'permission' => 'access-admin',
             ],
@@ -72,14 +72,18 @@ return [
 
     // Configuración de navegación contextual
     'contextual_nav' => [
-        'default' => ['$ref:nav_components.groups.user_management'],
+        'default' => [
+            '$ref:nav_components.groups.user_management',
+        ],
 
         // Rutas para la gestión de usuarios
         'users.index' => [
             '$ref:nav_components.links.back_to_panel',
             '$ref:nav_components.links.users_create',
         ],
-        'users.create' => ['$ref:nav_components.groups.back_navigation'],
+        'users.create' => [
+            '$ref:nav_components.groups.back_navigation',
+        ],
         'users.edit' => [
             '$ref:nav_components.links.back_to_panel',
             '$ref:nav_components.links.back_to_list',
@@ -102,7 +106,7 @@ return [
     'breadcrumb_components' => [
         'admin_root' => [
             'title' => 'Módulo de Administración',
-            'route_name_suffix' => 'panel',
+            'route_name_suffix' => 'index',
         ],
         'users_list' => [
             'title' => 'Lista de Usuarios',

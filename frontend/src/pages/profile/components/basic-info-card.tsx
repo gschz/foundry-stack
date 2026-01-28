@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToastNotifications } from '@/hooks/use-toast-notifications';
 import { Link, useForm } from '@inertiajs/react';
-import type { BasicInfoCardProps, BasicInfoForm } from './types';
+import type { BasicInfoCardProps, BasicInfoForm } from '../types';
 
 export function BasicInfoCard({
   initialName,
@@ -25,7 +25,7 @@ export function BasicInfoCard({
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    form.patch(route('internal.settings.profile.update'), {
+    form.patch(route('internal.staff.profile.update'), {
       preserveScroll: true,
       onSuccess: () => {
         showSuccess('Perfil actualizado correctamente.');
@@ -40,7 +40,7 @@ export function BasicInfoCard({
   };
 
   return (
-    <Card className="max-w-[600px]">
+    <Card className="max-w-150">
       <CardHeader>
         <CardTitle>Información básica</CardTitle>
         <CardDescription>Actualiza tu nombre y dirección de correo electrónico</CardDescription>

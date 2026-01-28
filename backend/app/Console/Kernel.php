@@ -15,20 +15,19 @@ final class Kernel extends ConsoleKernel
     /**
      * Los comandos de Artisan proporcionados por la aplicación.
      *
-     * Este array registra los comandos personalizados para que estén disponibles
-     * a través de la interfaz de línea de comandos de Artisan.
-     *
      * @var array<int, class-string>
      */
     protected $commands = [
         Commands\MakeProjectModuleCommand::class,
-        Commands\SyncGuardPermissionsCommand::class,
     ];
 
     /**
      * Define la programación de comandos de la aplicación.
      */
-    protected function schedule(Schedule $schedule): void {}
+    protected function schedule(Schedule $schedule): void
+    {
+        //
+    }
 
     /**
      * Registra los comandos para la aplicación.

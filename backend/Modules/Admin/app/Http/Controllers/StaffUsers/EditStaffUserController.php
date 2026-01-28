@@ -6,105 +6,92 @@ namespace Modules\Admin\App\Http\Controllers\StaffUsers;
 
 use Exception;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
+use Illuminate\Http\Request as IlluminateRequest;
 use Illuminate\Support\Facades\Log;
 use Inertia\Response as InertiaResponse;
-use Modules\Admin\App\Http\Controllers\AdminBaseController;
-use Modules\Admin\App\Http\Requests\UserRequest;
+use Modules\Admin\App\Http\Controllers\AbstractAdminController;
+use Modules\Admin\App\Http\Controllers\StaffUsers\Concerns\NormalizesStaffUserPayload;
+use Modules\Admin\App\Http\Requests\StaffUserRequest;
 use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
 
 /**
  * Controlador para la edición de usuarios del personal administrativo.
  */
-final class EditController extends AdminBaseController
+final class EditStaffUserController extends AbstractAdminController
 {
+    use NormalizesStaffUserPayload;
+
     /**
      * Muestra el formulario de edición de un usuario existente.
      *
-     * @param  Request  $request  Solicitud HTTP
+     * @param  IlluminateRequest  $request  Solicitud HTTP
      * @param  int  $id  ID del usuario a editar
      * @return InertiaResponse Respuesta Inertia con el formulario de edición
+     *
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException Si el usuario no existe o no está autenticado.
      */
-    public function show(Request $request, int $id): InertiaResponse
+    public function edit(IlluminateRequest $request, int $id): InertiaResponse
     {
-        // Obtener el usuario por ID con sus roles
         $user = $this->staffUserManager->getUserById($id);
 
         abort_unless($user instanceof StaffUser, 404, 'Usuario no encontrado');
 
-        // Obtener todos los roles disponibles
         $roles = $this->staffUserManager->getAllRoles();
 
-        // Proporcionar datos adicionales específicos de la vista
         $additionalData = [
             'user' => $user,
             'roles' => $roles,
         ];
 
-        return $this->prepareAndRenderModuleView(
-            view: 'user/edit',
+        return $this->orchestrator->renderModuleView(
             request: $request,
-            additionalData: $additionalData
+            moduleSlug: $this->getModuleSlug(),
+            additionalData: $additionalData,
+            navigationService: $this->navigationBuilder,
+            view: 'user/edit'
         );
     }
 
     /**
      * Actualiza un usuario existente.
      *
-     * @param  UserRequest  $request  Solicitud validada para actualización de usuario
+     * @param  StaffUserRequest  $request  Solicitud validada para actualización de usuario
      * @param  int  $id  ID del usuario a actualizar
      * @return RedirectResponse Redirección con mensaje de éxito
+     *
+     * @throws \Illuminate\Validation\ValidationException Si la validación de entrada falla.
      */
-    public function update(UserRequest $request, int $id): RedirectResponse
+    public function update(StaffUserRequest $request, int $id): RedirectResponse
     {
         try {
             $user = $this->staffUserManager->getUserById($id);
 
-            if (! $user instanceof StaffUser) {
-                return to_route('internal.admin.users.index')
+            if (! ($user instanceof StaffUser)) {
+                return to_route('internal.staff.admin.users.index')
                     ->with(
                         'error',
                         'Usuario no encontrado. No se pudo realizar la actualización.'
                     );
             }
 
-            $validatedData = $request->validated();
-
-            // Solo actualizar la contraseña si se proporciona una nueva y es string
-            /** @var mixed $rawPassword */
-            $rawPassword = $validatedData['password'] ?? null;
-            if (! is_string($rawPassword) || $rawPassword === '') {
-                unset($validatedData['password']);
-            } else {
-                $validatedData['password'] = bcrypt($rawPassword);
-                // Registrar fecha de cambio de contraseña
-                $validatedData['password_changed_at'] = now();
-            }
+            $validatedData = $this->buildUpdatePayload($request);
 
             $this->staffUserManager->updateUser($id, $validatedData);
 
-            if ($request->has('roles')) {
-                /** @var array<mixed> $incomingRoles */
-                $incomingRoles = (array) $request->input('roles', []);
-                /** @var array<int, string|int> $filteredRoles */
-                $filteredRoles = array_values(array_filter(
-                    $incomingRoles,
-                    static fn ($r): bool => is_string($r) || is_int($r)
-                ));
-
+            $filteredRoles = $this->normalizeRoleInputs($request);
+            if ($filteredRoles !== []) {
                 $this->staffUserManager->syncRoles($user, $filteredRoles);
             }
 
             $nameAttr = $user->getAttribute('name');
             $userName = is_string($nameAttr) ? $nameAttr : '';
 
-            return to_route('internal.admin.users.index')
+            return to_route('internal.staff.admin.users.index')
                 ->with(
                     'success',
                     sprintf("Usuario '%s' actualizado exitosamente.", $userName)
                 );
         } catch (Exception $exception) {
-            // Loguear el error para análisis posterior
             Log::error(
                 'Error al actualizar usuario: '.$exception->getMessage(),
                 [
@@ -117,7 +104,6 @@ final class EditController extends AdminBaseController
                 ]
             );
 
-            // Mensaje de error amigable para el usuario
             return back()
                 ->withInput($request->except([
                     'password',
@@ -139,52 +125,48 @@ final class EditController extends AdminBaseController
     public function destroy(int $id): RedirectResponse
     {
         try {
-            // Obtener el usuario para verificar si tiene roles protegidos
             $user = $this->staffUserManager->getUserById($id);
 
-            if (! $user instanceof StaffUser) {
-                return to_route('internal.admin.users.index')
+            if (! ($user instanceof StaffUser)) {
+                return to_route('internal.staff.admin.users.index')
                     ->with(
                         'error',
                         'Usuario no encontrado. No se pudo realizar la eliminación.'
                     );
             }
 
-            // Verificar si el usuario tiene roles protegidos
             $hasProtectedRole = $user->roles
                 ->pluck('name')
                 ->contains(static fn ($name): bool => is_string($name)
                     && in_array(mb_strtoupper($name), ['ADMIN', 'DEV'], true));
 
             if ($hasProtectedRole) {
-                return to_route('internal.admin.users.index')
+                return to_route('internal.staff.admin.users.index')
                     ->with(
                         'error',
                         'No se puede eliminar un usuario con roles protegidos (ADMIN o DEV).'
                     );
             }
 
-            // Proceder con la eliminación si no tiene roles protegidos
             $deleted = $this->staffUserManager->deleteUser($id);
 
             if ($deleted) {
                 $nameAttr = $user->getAttribute('name');
                 $userName = is_string($nameAttr) ? $nameAttr : '';
 
-                return to_route('internal.admin.users.index')
+                return to_route('internal.staff.admin.users.index')
                     ->with(
                         'success',
                         sprintf("Usuario '%s' eliminado exitosamente.", $userName)
                     );
             }
 
-            return to_route('internal.admin.users.index')
+            return to_route('internal.staff.admin.users.index')
                 ->with(
                     'error',
                     'No se pudo eliminar el usuario. Intente nuevamente.'
                 );
         } catch (Exception $exception) {
-            // Loguear el error para análisis posterior
             Log::error(
                 'Error al eliminar usuario: '.$exception->getMessage(),
                 [
@@ -193,7 +175,7 @@ final class EditController extends AdminBaseController
                 ]
             );
 
-            return to_route('internal.admin.users.index')
+            return to_route('internal.staff.admin.users.index')
                 ->with(
                     'error',
                     'Ocurrió un error al eliminar el usuario. Por favor, inténtalo nuevamente.'

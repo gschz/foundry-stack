@@ -13,10 +13,12 @@ use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
  * Request para validación de datos de formulario de usuarios del staff.
  * Maneja tanto la creación como la actualización de usuarios.
  */
-final class UserRequest extends FormRequest
+final class StaffUserRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Determina si el usuario está autorizado para realizar esta solicitud.
+     *
+     * @return bool Verdadero si el usuario puede acceder; falso en caso contrario.
      */
     public function authorize(): bool
     {
@@ -27,7 +29,7 @@ final class UserRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Obtiene las reglas de validación que se aplican a la solicitud.
      *
      * @return array<string, mixed>
      */
@@ -98,7 +100,7 @@ final class UserRequest extends FormRequest
     }
 
     /**
-     * Get custom messages for validator errors.
+     * Obtiene mensajes personalizados para errores de validación.
      *
      * @return array<string, string>
      */

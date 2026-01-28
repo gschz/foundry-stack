@@ -2,18 +2,28 @@
 
 declare(strict_types=1);
 
-namespace App\Services;
+namespace Modules\Admin\App\Services;
 
-use App\DTO\EnhancedStat;
-use App\Interfaces\StatsServiceInterface;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Modules\Admin\App\Interfaces\StaffUserManagerInterface;
+use Modules\Core\Contracts\StatsServiceInterface;
+use Modules\Core\Domain\Stats\EnhancedStat;
 
+/**
+ * Servicio de estadísticas del dashboard para Admin.
+ *
+ * Expone estadísticas agregadas para el panel administrativo.
+ */
 final readonly class AdminStatsService implements StatsServiceInterface
 {
+    /**
+     * @param  StaffUserManagerInterface  $staffUserManager  {@inheritDoc}
+     */
     public function __construct(
         private StaffUserManagerInterface $staffUserManager,
-    ) {}
+    ) {
+        //
+    }
 
     /**
      * {@inheritDoc}
@@ -22,7 +32,6 @@ final readonly class AdminStatsService implements StatsServiceInterface
         string $moduleSlug,
         ?Authenticatable $user = null
     ): array {
-        // Totales básicos del dashboard Admin
         $totalUsers = $this->staffUserManager->getTotalUsers();
         $totalRoles = $this->staffUserManager->getTotalRoles();
 

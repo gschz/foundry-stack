@@ -148,7 +148,7 @@ const UserCreateManager: React.FC<UserCreateManagerProps> = ({ roles, authUserId
     } as const;
 
     // Enviar el formulario directamente usando router de Inertia
-    const url = route('internal.admin.users.store');
+    const url = route('internal.staff.admin.users.store');
 
     // Usar post directamente desde el router de Inertia, con opciones para evitar la redirección automática
     router.post(url, formData as unknown as FormData, {
@@ -229,7 +229,7 @@ const UserCreateManager: React.FC<UserCreateManagerProps> = ({ roles, authUserId
 
   const handleFinishAndRedirect = () => {
     setIsShareDialogOpen(false);
-    const url = route('internal.admin.users.index');
+    const url = route('internal.staff.admin.users.index');
     globalThis.location.href = url;
   };
 

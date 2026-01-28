@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
+
 return [
 
     /*
@@ -98,11 +100,11 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\StaffUsers::class),
+            'model' => env('AUTH_MODEL', StaffUser::class),
         ],
         'staff' => [
             'driver' => 'eloquent',
-            'model' => App\Models\StaffUsers::class,
+            'model' => StaffUser::class,
             'table' => 'staff',
             'password_reset_expiration' => 15, // 15 minutos
         ],

@@ -6,10 +6,10 @@ namespace Modules\Admin\App\Providers;
 
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Route;
+use Modules\Core\Infrastructure\Eloquent\Models\StaffUser;
 
 /**
  * Provider para el registro de rutas del módulo Admin.
- * Define cómo se cargarán las rutas web y API del módulo.
  */
 final class RouteServiceProvider extends ServiceProvider
 {
@@ -31,6 +31,11 @@ final class RouteServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Route::bind(
+            'staff_user',
+            fn ($value) => StaffUser::query()->findOrFail($value)
+        );
+
         $this->routes(function (): void {
             Route::middleware('api')
                 ->prefix('api')

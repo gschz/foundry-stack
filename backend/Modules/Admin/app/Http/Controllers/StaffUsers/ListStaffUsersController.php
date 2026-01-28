@@ -4,22 +4,22 @@ declare(strict_types=1);
 
 namespace Modules\Admin\App\Http\Controllers\StaffUsers;
 
-use Illuminate\Http\Request;
+use Illuminate\Http\Request as IlluminateRequest;
 use Inertia\Response as InertiaResponse;
-use Modules\Admin\App\Http\Controllers\AdminBaseController;
+use Modules\Admin\App\Http\Controllers\AbstractAdminController;
 
 /**
  * Controlador para la gestión de listado de usuarios del personal administrativo.
  */
-final class ListController extends AdminBaseController
+final class ListStaffUsersController extends AbstractAdminController
 {
     /**
      * Muestra la lista de usuarios.
      *
-     * @param  Request  $request  Solicitud HTTP
+     * @param  IlluminateRequest  $request  Solicitud HTTP
      * @return InertiaResponse Respuesta Inertia con la lista de usuarios
      */
-    public function __invoke(Request $request): InertiaResponse
+    public function index(IlluminateRequest $request): InertiaResponse
     {
         $params = [
             'search' => $request->input('search'),
@@ -31,7 +31,6 @@ final class ListController extends AdminBaseController
                 : 10,
         ];
 
-        // Datos adicionales específicos para la vista de lista
         $additionalData = [
             'users' => $this->staffUserManager->getAllUsers($params),
             'roles' => $this->staffUserManager->getAllRoles(),
@@ -43,10 +42,12 @@ final class ListController extends AdminBaseController
             ]),
         ];
 
-        return $this->prepareAndRenderModuleView(
-            view: 'user/list',
+        return $this->orchestrator->renderModuleView(
             request: $request,
-            additionalData: $additionalData
+            moduleSlug: $this->getModuleSlug(),
+            additionalData: $additionalData,
+            navigationService: $this->navigationBuilder,
+            view: 'user/list'
         );
     }
 }

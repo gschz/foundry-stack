@@ -9,22 +9,32 @@ import { useEffect, useState, type PropsWithChildren } from 'react';
 const sidebarNavItems: NavItemDefinition[] = [
   {
     title: 'Perfil',
-    href: '/internal/settings/profile',
+    href: route('internal.staff.profile.edit'),
     icon: null,
   },
   {
     title: 'Contraseña',
-    href: '/internal/settings/password',
+    href: route('internal.staff.password.edit'),
     icon: null,
   },
   {
     title: 'Apariencia',
-    href: '/internal/settings/appearance',
+    href: route('internal.staff.appearance'),
+    icon: null,
+  },
+  {
+    title: 'Seguridad',
+    href: route('internal.staff.security.edit'),
+    icon: null,
+  },
+  {
+    title: 'Notificaciones',
+    href: route('internal.staff.notifications.edit'),
     icon: null,
   },
 ];
 
-export default function SettingsLayout({ children }: Readonly<PropsWithChildren>) {
+export default function ProfileLayout({ children }: Readonly<PropsWithChildren>) {
   const [currentPath, setCurrentPath] = useState('');
 
   useEffect(() => {
@@ -33,10 +43,7 @@ export default function SettingsLayout({ children }: Readonly<PropsWithChildren>
 
   return (
     <div className="px-4 py-6">
-      <Heading
-        title="Configuración"
-        description="Gestiona tu perfil y la configuración de tu cuenta"
-      />
+      <Heading title="Perfil" description="Gestiona tu perfil y la configuración de tu cuenta" />
 
       <div className="flex flex-col space-y-8 lg:flex-row lg:space-y-0 lg:space-x-12">
         <aside className="w-full max-w-xl lg:w-48">

@@ -4,47 +4,70 @@ declare(strict_types=1);
 
 namespace Modules\Admin\App\Http\Controllers;
 
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Http\Request as IlluminateRequest;
+use Inertia\Response as InertiaResponse;
+use Modules\Admin\App\Interfaces\StaffUserManagerInterface;
+use Modules\Core\Contracts\MenuBuilderInterface;
+use Modules\Core\Contracts\ModuleOrchestratorInterface;
+use Modules\Core\Contracts\StatsServiceInterface;
+use Modules\Core\Domain\Stats\EnhancedStat;
 use Spatie\Activitylog\Models\Activity;
 
 /**
  * Controlador principal del panel de administración.
- * Gestiona la visualización del dashboard administrativo y sus funcionalidades generales.
  *
- * NOTA: Este controlador hereda el método showModulePanel() de ModuleOrchestrationController,
- * el cual está marcado como 'final' y no debe ser sobrescrito. Para personalizar el
- * comportamiento del panel, implementa los métodos de extensión:
- * - getModuleStats(): para definir las estadísticas específicas del módulo
- * - getAdditionalPanelData(): para agregar datos adicionales al panel
+ * Gestiona la visualización del dashboard administrativo y sus funcionalidades generales.
  */
-final class AdminPanelController extends AdminBaseController
+final class AdminDashboardController extends AbstractAdminController
 {
     /**
-     * Hook extensible: datos adicionales específicos del módulo para el panel.
-     * Los controladores hijos pueden sobrescribirlo para añadir información propia.
-     *
-     * @return array<string, mixed> Datos adicionales a inyectar en la vista del panel
+     * @param  StatsServiceInterface  $statsService  Servicio de estadísticas del panel del módulo.
      */
-    protected function getAdditionalPanelData(): array
-    {
-        return [
-            'recentActivity' => $this->getRecentActivity(),
-        ];
+    public function __construct(
+        ModuleOrchestratorInterface $moduleOrchestrator,
+        MenuBuilderInterface $navigationBuilder,
+        StaffUserManagerInterface $staffUserManager,
+        private readonly StatsServiceInterface $statsService
+    ) {
+        parent::__construct(
+            orchestrator: $moduleOrchestrator,
+            navigationBuilder: $navigationBuilder,
+            staffUserManager: $staffUserManager
+        );
     }
 
     /**
-     * Exponer las estadísticas del módulo como EnhancedStat[].
+     * Renderiza el panel principal del módulo.
      *
-     * @return \App\DTO\EnhancedStat[] Estadísticas enriquecidas del módulo o null si no aplica
+     * @param  IlluminateRequest  $request  Request HTTP actual.
+     * @return InertiaResponse Respuesta Inertia del panel.
+     *
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException Si el usuario no está autenticado.
      */
-    protected function getModuleStats(): array
+    public function index(IlluminateRequest $request): InertiaResponse
     {
-        // Exponer las estadísticas del módulo como EnhancedStat[]
-        $stats = $this->statsService->getPanelStats(
+        $user = $this->orchestrator->resolveAuthenticatedUser(
+            $request,
             $this->getModuleSlug(),
-            $this->getAuthenticatedUser()
         );
 
-        return $stats;
+        /** @var array<int, EnhancedStat> $stats */
+        $stats = $this->statsService->getPanelStats(
+            $this->getModuleSlug(),
+            $user instanceof Authenticatable ? $user : null
+        );
+
+        return $this->orchestrator->renderModuleView(
+            request: $request,
+            moduleSlug: $this->getModuleSlug(),
+            additionalData: [
+                'stats' => $stats,
+                'recentActivity' => $this->getRecentActivity(),
+            ],
+            navigationService: $this->navigationBuilder,
+            view: 'index'
+        );
     }
 
     /**
@@ -71,7 +94,6 @@ final class AdminPanelController extends AdminBaseController
                 $causerName = is_string($attr) ? $attr : 'Sistema';
             }
 
-            // Asegurar timestamp válido
             $created = $activity->created_at;
             $timestamp = $created instanceof \Carbon\Carbon
                 ? $created->toIso8601String()

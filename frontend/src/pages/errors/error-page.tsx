@@ -130,7 +130,7 @@ export default function ErrorPage() {
   // Determinar la ruta de inicio según autenticación
   const getHomeRoute = () => {
     if (props.auth.user) {
-      return route('internal.dashboard');
+      return route('internal.staff.dashboard');
     }
     return route('welcome');
   };
