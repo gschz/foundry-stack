@@ -1,6 +1,6 @@
 {
   "$schema": "https://getcomposer.org/schema.json",
-  "name": "laravel/backend",
+  "name": "foundry-stack/backend",
   "type": "project",
   "require": {
     "php": "^8.4",

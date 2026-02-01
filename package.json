@@ -1,16 +1,19 @@
 {
-  "name": "laravel-react-modular-stack",
-  "description": "All scripts are executed with `bun`, not `npm`, `yarn` or `pnpm`. (bun run <script>).",
+  "name": "foundry-stack",
+  "description": "A modular Laravel + React baseline for internal management systems.",
+  "version": "0.2.0-alpha",
   "private": true,
   "author": {
     "name": "Gera Schz",
-    "username": "hkxdv",
-    "url": "https://github.com/hkxdv"
+    "username": "gschz",
+    "url": "https://github.com/gschz",
+    "email": "gschz.git@gmail.com"
   },
   "license": "MIT",
   "workspaces": [
     "frontend",
-    "backend"
+    "backend",
+    "packages/*"
   ],
   "scripts": {
     "// GENERAL": "-----------------------------------------------------------",
@@ -76,7 +79,17 @@
     "pg:tinker": "bun run pg tinker"
   },
   "devDependencies": {
-    "concurrently": "9.1.2",
-    "dotenv-cli": "7.4.4"
-  }
+    "concurrently": "9.2.1"
+  },
+  "engines": {
+    "bun": ">=1.3.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gschz/foundry-stack.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gschz/foundry-stack/issues"
+  },
+  "homepage": "https://github.com/gschz/foundry-stack#readme"
 }

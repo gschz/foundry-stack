@@ -1,5 +1,5 @@
 {
-  "name": "laravel-react-modular-stack-frontend",
+  "name": "foundry-stack-frontend",
   "private": true,
   "type": "module",
   "scripts": {

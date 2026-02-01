@@ -1,4 +1,5 @@
 {
-  "name": "laravel-react-modular-stack-backend",
-  "private": true
+  "name": "foundry-stack-backend",
+  "private": true,
+  "description": "Scripts ejecutados con Bun; entornos via --env-file",
 }
