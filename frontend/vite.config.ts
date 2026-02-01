@@ -2,21 +2,23 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import path from 'node:path';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
-  const ProcessEnv: NodeJS.ProcessEnv = process.env;
+  const envDir = path.resolve(import.meta.dirname, '../.envs');
+  const env = loadEnv(mode, envDir, '');
+
   const isProduction = mode === 'production';
-  const isDocker = ProcessEnv['APP_RUNNING_IN_CONTAINER'] === 'true';
+  const isDocker = env['APP_RUNNING_IN_CONTAINER'] === 'true';
   const host = isProduction || isDocker ? '0.0.0.0' : 'localhost';
 
   // Obtener la URL de la aplicación desde las variables de entorno para HMR
-  const appUrl = ProcessEnv['VITE_APP_URL'] ?? 'http://localhost:8080';
+  const appUrl = env['VITE_APP_URL'] ?? 'http://localhost:8080';
   // Extraer el hostname de la URL para usarlo en la configuración de HMR
   const appHostname = new URL(appUrl).hostname;
 
   return {
-    envDir: '../',
+    envDir,
     server: {
       host,
       port: 5173,

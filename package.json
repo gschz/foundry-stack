@@ -56,6 +56,8 @@
     " ↓ ": "# Inicia el servidor de Vite en el HOST, pero usando las variables de .env.docker para que se conecte a la URL correcta.",
     "dev:fe:docker": "dotenv -e .env.docker -- bun --cwd ./frontend dev",
     "dk:up:foreground": "bun run dk up --remove-orphans",
+    "dk": "docker-compose --env-file ./.envs/.env.docker",
+    "dev:fe:dk": "bun run --env-file ./.envs/.env.docker -- bun run fe dev",
     "dk:up": "bun run dk up -d",
     "dk:build": "bun run dk build",
     "dk:down": "bun run dk down",

@@ -6,11 +6,6 @@
 !/.github
 /others/
 /node_modules/
-bun.lock
 .DS_Store
-.env.docker
-.env.local
-.env.pg.local
-.env.users
-.env.production.local
-.env.testing
+.envs/.env*
+!.envs/.env.*.example

@@ -2,4 +2,6 @@
   "name": "foundry-stack-backend",
   "private": true,
   "description": "Scripts ejecutados con Bun; entornos via --env-file",
+    "artisan": "bun run --env-file ../.envs/.env.local -- php artisan",
+    "pg": "bun run --env-file ../.envs/.env.pg.local -- php artisan",
 }
