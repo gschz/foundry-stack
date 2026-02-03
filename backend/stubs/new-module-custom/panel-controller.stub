@@ -1,0 +1,35 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $CONTROLLER_NAMESPACE$;
+
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Http\Request;
+use Modules\Core\Domain\Stats\EnhancedStat;
+use Inertia\Response as InertiaResponse;
+
+final class $STUDLY_NAME$DashboardController extends Abstract$STUDLY_NAME$Controller
+{
+    public function index(Request $request): InertiaResponse
+    {
+        $user = $this->orchestrator->resolveAuthenticatedUser(
+            $request,
+            $this->getModuleSlug()
+        );
+
+        /** @var array<int, EnhancedStat> $stats */
+        $stats = $this->statsService->getPanelStats(
+            $this->getModuleSlug(),
+            $user instanceof Authenticatable ? $user : null
+        );
+
+        return $this->orchestrator->renderModuleView(
+            request: $request,
+            moduleSlug: $this->getModuleSlug(),
+            additionalData: ['stats' => $stats],
+            navigationService: $this->navigationBuilder,
+            view: 'index'
+        );
+    }
+}

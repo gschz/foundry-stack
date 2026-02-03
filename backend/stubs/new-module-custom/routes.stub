@@ -1,0 +1,30 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Support\Facades\Route;
+use Modules\$STUDLY_NAME$\App\Http\Controllers\$STUDLY_NAME$DashboardController;
+
+/*
+|--------------------------------------------------------------------------
+| Rutas Web
+|--------------------------------------------------------------------------
+|
+| Todas las rutas están prefijadas con '/internal/staff/$KEBAB_NAME$' y protegidas
+| por el guard 'staff' y el permiso base del módulo.
+|
+*/
+
+Route::middleware([
+    'auth:staff',
+    'verified',
+    'throttle:60,1',
+    'permission:access-$KEBAB_NAME$,staff',
+])->prefix('internal/staff/$KEBAB_NAME$')->name('internal.staff.$LOWER_NAME$.')->group(
+    function (): void {
+        Route::get(
+            '/',
+            [$STUDLY_NAME$DashboardController::class, 'index']
+        )->name('index');
+    }
+);

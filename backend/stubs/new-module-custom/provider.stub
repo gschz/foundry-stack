@@ -1,0 +1,47 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $PROVIDER_NAMESPACE$;
+
+use Illuminate\Support\ServiceProvider;
+use Modules\Core\Contracts\StatsServiceInterface;
+use Modules\$STUDLY_NAME$\App\Http\Controllers\Abstract$STUDLY_NAME$Controller;
+use Modules\$STUDLY_NAME$\App\Http\Controllers\$STUDLY_NAME$DashboardController;
+use Modules\$STUDLY_NAME$\App\Services\$STUDLY_NAME$StatsService;
+
+final class $STUDLY_NAME$ServiceProvider extends ServiceProvider
+{
+    private string $moduleName = '$STUDLY_NAME$';
+
+    private string $moduleNameLower = '$LOWER_NAME$';
+
+    public function register(): void
+    {
+        $this->app->register(RouteServiceProvider::class);
+        $this->loadMigrationsFrom(module_path($this->moduleName, 'database/migrations'));
+
+        $this->app->when(Abstract$STUDLY_NAME$Controller::class)
+            ->needs(StatsServiceInterface::class)
+            ->give($STUDLY_NAME$StatsService::class);
+        $this->app->when($STUDLY_NAME$DashboardController::class)
+            ->needs(StatsServiceInterface::class)
+            ->give($STUDLY_NAME$StatsService::class);
+    }
+
+    public function boot(): void
+    {
+        $this->registerConfig();
+    }
+
+    private function registerConfig(): void
+    {
+        $this->publishes([
+            module_path($this->moduleName, 'config/config.php') => config_path($this->moduleNameLower.'.php'),
+        ], 'config');
+        $this->mergeConfigFrom(
+            module_path($this->moduleName, 'config/config.php'),
+            $this->moduleNameLower
+        );
+    }
+}
