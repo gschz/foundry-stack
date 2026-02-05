@@ -4,10 +4,12 @@ on:
   pull_request:
     paths:
       - "backend/**"
+      - ".github/workflows/rector.yml"
   push:
     branches: [main]
     paths:
       - "backend/**"
+      - ".github/workflows/rector.yml"
 
 jobs:
   rector:
@@ -15,15 +17,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
           tools: composer
           coverage: none
+
+      - name: Configure env (testing)
+        shell: bash
+        run: |
+          echo "APP_ENV=testing" >> "$GITHUB_ENV"
+          echo "APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" >> "$GITHUB_ENV"
+          echo "LARAVEL_ENV_FILE=.envs/.env.testing.example" >> "$GITHUB_ENV"
       - name: Install dependencies (backend)
         working-directory: backend
         run: composer install --no-interaction --prefer-dist --no-progress
       - name: Run Rector (dry-run)
         working-directory: backend
-        run: composer run lint
+        run: composer run rector:dry

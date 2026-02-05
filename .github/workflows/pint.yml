@@ -5,12 +5,11 @@ on:
     branches: [main]
     paths:
       - "backend/**"
+      - ".github/workflows/pint.yml"
   pull_request:
     paths:
       - "backend/**"
-
-permissions:
-  contents: write
+      - ".github/workflows/pint.yml"
 
 jobs:
   pint:
@@ -26,16 +25,8 @@ jobs:
 
       - name: Install Composer dependencies
         working-directory: ./backend
-        run: composer install --prefer-dist --no-progress
+        run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Run Pint
         working-directory: ./backend
-        run: ./vendor/bin/pint
-
-      - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "style: Format PHP files with Pint (backend + database)"
-          file_pattern: |
-            backend/**/*.php
-            database/**/*.php
+        run: ./vendor/bin/pint --test

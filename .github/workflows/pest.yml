@@ -4,10 +4,14 @@ on:
   pull_request:
     paths:
       - "backend/**"
+      - "frontend/**"
+      - ".github/workflows/pest.yml"
   push:
     branches: [main]
     paths:
       - "backend/**"
+      - "frontend/**"
+      - ".github/workflows/pest.yml"
 
 jobs:
   pest:
@@ -15,17 +19,31 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
           tools: composer
           coverage: none
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Configure env (testing)
+        shell: bash
+        run: |
+          echo "APP_ENV=testing" >> "$GITHUB_ENV"
+          echo "APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" >> "$GITHUB_ENV"
+          echo "LARAVEL_ENV_FILE=.envs/.env.testing.example" >> "$GITHUB_ENV"
+
       - name: Install dependencies (backend)
         working-directory: backend
         run: composer install --no-interaction --prefer-dist --no-progress
-      - name: Setup Bun (for frontend build)
-        uses: oven-sh/setup-bun@v2
+
+      - name: Generate Ziggy routes
+        run: php backend/artisan ziggy:generate frontend/src/ziggy.js
+
       - name: Install dependencies (frontend)
         working-directory: frontend
         run: bun install --no-progress
@@ -34,4 +52,4 @@ jobs:
         run: bun run build
       - name: Run Pest
         working-directory: backend
-        run: composer run test
+        run: ./vendor/bin/pest --ci
