@@ -1,0 +1,11 @@
+{
+    "name": "$VENDOR_LOWER$/$LOWER_NAME$",
+    "type": "laravel-module",
+    "autoload": {
+        "psr-4": {
+            "Modules\\$STUDLY_NAME$\\App\\": "app/",
+            "Modules\\$STUDLY_NAME$\\Database\\Factories\\": "database/factories/",
+            "Modules\\$STUDLY_NAME$\\Database\\Seeders\\": "database/seeders/"
+        }
+    }
+} 

@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'functional_name' => 'Módulo genérico',
+    'description' => 'Módulo genérico para demostración.',
+    'module_slug' => '$LOWER_NAME$',
+    'inertia_view_directory' => '$LOWER_NAME$',
+    'base_permission' => 'access-$KEBAB_NAME$',
+
+    'nav_item' => [
+        'show_in_nav' => true,
+        'route_name' => 'internal.staff.$LOWER_NAME$.index',
+        'icon' => 'ClipboardList',
+    ],
+
+    'contextual_nav' => [
+        'default' => [
+            [
+                'title' => 'Panel de ejemplo',
+                'route_name_suffix' => 'index',
+                'icon' => 'LayoutDashboard',
+                'permission' => 'access-$KEBAB_NAME$',
+            ],
+        ],
+    ],
+
+    'panel_items' => [
+        [
+            'name' => 'Item de ejemplo 1',
+            'description' => 'Item de ejemplo 1 para la demostración del proyecto.',
+            'route_name_suffix' => 'index',
+            'icon' => 'FilePlus2',
+            'permission' => 'access-$KEBAB_NAME$',
+        ],
+    ],
+];

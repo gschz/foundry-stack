@@ -1,4 +1,26 @@
 {
-  "name": "laravel-react-modular-stack-backend",
-  "private": true
+  "name": "foundry-stack-backend",
+  "private": true,
+  "description": "Scripts ejecutados con Bun; entornos via --env-file",
+  "scripts": {
+    "// GENERAL": "-----------------------------------------------------------",
+    "i": "composer install",
+    "dump": "composer dump-autoload",
+    "qa": "composer pint:test && composer test:types && composer test && composer rector:dry",
+    "clear:all": "php artisan cache:clear && php artisan config:clear && php artisan event:clear && php artisan optimize:clear && php artisan route:clear && php artisan view:clear && composer dump-autoload",
+    "make-module": "php artisan make:project-module",
+    "ziggy": "php artisan ziggy:generate ../frontend/src/ziggy.js",
+    "// ENV (LOCAL)": "-------------------------------------------------------",
+    "artisan": "bun run --env-file ../.envs/.env.local -- php artisan",
+    "dev": "bun run ziggy && bun run artisan serve --host=localhost --port=8080",
+    "ql": "bun run artisan queue:listen --queue=default --sleep=1 --timeout=120 --memory=256 --tries=1",
+    "migrate:fresh:seed": "bun run artisan migrate:fresh --seed --force --no-interaction",
+    "tinker": "bun run artisan tinker",
+    "// ENV (PG)": "----------------------------------------------------------",
+    "pg": "bun run --env-file ../.envs/.env.pg.local -- php artisan",
+    "pg:dev": "bun run pg serve --host=localhost --port=8080",
+    "pg:ql": "bun run pg queue:listen --queue=default --sleep=1 --timeout=120 --memory=256 --tries=1",
+    "pg:migrate:fresh:seed": "bun run pg migrate:fresh --seed --force --no-interaction",
+    "pg:tinker": "bun run pg tinker"
+  }
 }

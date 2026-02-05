@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $CONTROLLER_NAMESPACE$;
+
+use App\Http\Controllers\Controller;
+use Modules\Core\Contracts\MenuBuilderInterface;
+use Modules\Core\Contracts\ModuleOrchestratorInterface;
+use Modules\Core\Contracts\StatsServiceInterface;
+
+abstract class Abstract$STUDLY_NAME$Controller extends Controller
+{
+    protected string $moduleSlug;
+
+    public function __construct(
+        protected readonly ModuleOrchestratorInterface $orchestrator,
+        protected readonly MenuBuilderInterface $navigationBuilder,
+        protected readonly StatsServiceInterface $statsService
+    ) {
+        $this->moduleSlug = $this->resolveModuleSlug();
+    }
+
+    protected function getModuleSlug(): string
+    {
+        return $this->moduleSlug;
+    }
+
+    private function resolveModuleSlug(): string
+    {
+        $configured = config('$LOWER_NAME$.module_slug');
+
+        return is_string($configured) && $configured !== ''
+            ? $configured
+            : '$LOWER_NAME$';
+    }
+}

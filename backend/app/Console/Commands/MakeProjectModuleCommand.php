@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
+use Modules\Core\Contracts\AddonRegistryInterface;
 
 final class MakeProjectModuleCommand extends Command
 {
@@ -92,10 +93,11 @@ final class MakeProjectModuleCommand extends Command
         // Crear directorios principales
         $directories = [
             'app/Http/Controllers',
-            'app/Http/Middleware',
             'app/Http/Requests',
+            'app/Interfaces',
             'app/Models',
             'app/Providers',
+            'app/Services',
             'config',
             'database/factories',
             'database/migrations',
@@ -113,8 +115,8 @@ final class MakeProjectModuleCommand extends Command
 
                 // Añadir .gitkeep si el directorio está en la lista de directorios vacíos comunes
                 $emptyDirectories = [
-                    'app/Http/Middleware',
                     'app/Http/Requests',
+                    'app/Interfaces',
                     'app/Models',
                     'database/factories',
                     'database/migrations',
@@ -156,6 +158,10 @@ final class MakeProjectModuleCommand extends Command
                 'stub' => 'routes.stub',
                 'dest' => $basePath.'/routes/web.php',
             ],
+            'routes/api.php' => [
+                'stub' => '',
+                'dest' => $basePath.'/routes/api.php',
+            ],
             'app/Providers/'.$studlyName.'ServiceProvider.php' => [
                 'stub' => 'provider.stub',
                 'dest' => $basePath.'/app/Providers/'.$studlyName.'ServiceProvider.php',
@@ -164,9 +170,17 @@ final class MakeProjectModuleCommand extends Command
                 'stub' => 'route-provider.stub',
                 'dest' => $basePath.'/app/Providers/RouteServiceProvider.php',
             ],
-            'app/Http/Controllers/'.$studlyName.'Controller.php' => [
+            'app/Http/Controllers/Abstract'.$studlyName.'Controller.php' => [
                 'stub' => 'controller.stub',
-                'dest' => $basePath.'/app/Http/Controllers/'.$studlyName.'Controller.php',
+                'dest' => $basePath.'/app/Http/Controllers/Abstract'.$studlyName.'Controller.php',
+            ],
+            'app/Http/Controllers/'.$studlyName.'DashboardController.php' => [
+                'stub' => 'panel-controller.stub',
+                'dest' => $basePath.'/app/Http/Controllers/'.$studlyName.'DashboardController.php',
+            ],
+            'app/Services/'.$studlyName.'StatsService.php' => [
+                'stub' => 'stats-service.stub',
+                'dest' => $basePath.'/app/Services/'.$studlyName.'StatsService.php',
             ],
             'database/seeders/'.$studlyName.'DatabaseSeeder.php' => [
                 'stub' => 'seeder.stub',
@@ -190,6 +204,17 @@ final class MakeProjectModuleCommand extends Command
         foreach ($filesToGenerate as $fileInfo) {
             $stubPath = $stubsPath.$fileInfo['stub'];
             $destPath = $fileInfo['dest'];
+
+            if ($fileInfo['stub'] === '') {
+                if (! File::exists($destPath)) {
+                    File::put($destPath, "<?php\n\ndeclare(strict_types=1);\n");
+                    $this->line(
+                        'Archivo generado: '.str_replace(base_path(), '', $destPath)
+                    );
+                }
+
+                continue;
+            }
 
             if (! File::exists($stubPath)) {
                 $this->warn(
@@ -230,6 +255,8 @@ final class MakeProjectModuleCommand extends Command
             is_string($jsonStatuses) ? $jsonStatuses : '[]'
         );
         $this->info('modules_statuses.json actualizado.');
+
+        $this->laravel->get(AddonRegistryInterface::class)->clearConfigCache();
 
         // Ejecutar composer dump-autoload
         $this->info('Actualizando autoload de Composer...');

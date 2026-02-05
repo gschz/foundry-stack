@@ -1,0 +1,51 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $PROVIDER_NAMESPACE$;
+
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Route;
+
+final class RouteServiceProvider extends ServiceProvider
+{
+    private string $moduleNamespace = 'Modules\\$STUDLY_NAME$\\App\\Http\\Controllers';
+
+    public function register(): void
+    {
+        parent::register();
+    }
+
+    public function boot(): void
+    {
+        $this->routes(function (): void {
+            Route::middleware('api')
+                ->prefix('api')
+                ->group(module_path('$STUDLY_NAME$', 'routes/api.php'));
+
+            Route::middleware('web')
+                ->group(module_path('$STUDLY_NAME$', 'routes/web.php'));
+        });
+    }
+
+    public function map(): void
+    {
+        $this->mapWebRoutes();
+        $this->mapApiRoutes();
+    }
+
+    private function mapWebRoutes(): void
+    {
+        Route::middleware('web')
+            ->namespace($this->moduleNamespace)
+            ->group(module_path('$STUDLY_NAME$', '/routes/web.php'));
+    }
+
+    private function mapApiRoutes(): void
+    {
+        Route::prefix('api')
+            ->middleware('api')
+            ->namespace($this->moduleNamespace)
+            ->group(module_path('$STUDLY_NAME$', '/routes/api.php'));
+    }
+}

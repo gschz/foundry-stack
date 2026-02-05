@@ -30,12 +30,13 @@ return function (Application $application): void {
     $appEnv = Env::get('APP_ENV', $_SERVER['APP_ENV'] ?? null);
 
     // 3. Definición de Archivos de Entorno (Hardcoded Estándar)
-    // Ya no dependemos de config/bootstrap.php para esto.
-    $preferred = '.env.local';
-    $testing = '.env.testing';
-    $docker = '.env.docker';
-    $production = '.env.production.local';
-    $usersEnvFile = '.env.users';
+    $envDir = '.envs';
+    $envMap = [
+        'testing' => $envDir.DIRECTORY_SEPARATOR.'.env.testing',
+        'docker' => $envDir.DIRECTORY_SEPARATOR.'.env.docker',
+        'production' => $envDir.DIRECTORY_SEPARATOR.'.env.production.local',
+        'local' => $envDir.DIRECTORY_SEPARATOR.'.env.local',
+    ];
     $required = ['APP_ENV', 'APP_KEY'];
 
     // 4. Determinar Archivo de Entorno (Lógica Explícita)
@@ -43,27 +44,23 @@ return function (Application $application): void {
     $context = 'default';
 
     // Prioridad 1: Override Explícito (ej. Bun --env-file inyectando LARAVEL_ENV_FILE)
-    $explicitEnvFile = Env::get(
-        'LARAVEL_ENV_FILE',
-        $_SERVER['LARAVEL_ENV_FILE'] ?? null
-    );
-    if ($explicitEnvFile) {
-        $envFileName = $explicitEnvFile;
+    if ($explicit = Env::get('LARAVEL_ENV_FILE', $_SERVER['LARAVEL_ENV_FILE'] ?? null)) {
+        $envFileName = $explicit;
         $context = 'explicit (LARAVEL_ENV_FILE)';
     }
     // Prioridad 2: Entorno de Pruebas
     elseif ($isPhpUnit || $appEnv === 'testing') {
-        $envFileName = $testing;
+        $envFileName = $envMap['testing'];
         $context = 'testing';
     }
     // Prioridad 3: Contenedor Docker
     elseif ($runningInContainer) {
-        $envFileName = $docker;
+        $envFileName = $envMap['docker'];
         $context = 'docker';
     }
     // Prioridad 4: Producción
     elseif ($appEnv === 'production') {
-        $envFileName = $production;
+        $envFileName = $envMap['production'];
         $context = 'production';
     }
     // Prioridad 5: Desarrollo Local (Por Defecto o Fallo de Configuración)
@@ -71,25 +68,17 @@ return function (Application $application): void {
         // Validación Estricta:
         // Si detectamos que YA existen variables críticas en el entorno (inyectadas por Bun, Docker mal configurado, etc.)
         // pero NO tenemos un LARAVEL_ENV_FILE explícito, asumimos una configuración rota y fallamos.
-
-        $hasInjectedEnv = Env::get('APP_KEY') !== null
-            || (Env::get('APP_ENV') !== null && Env::get('APP_ENV') !== 'production');
-
-        if ($hasInjectedEnv) {
+        if (
+            Env::get('APP_KEY') !== null
+            || (Env::get('APP_ENV') !== null && Env::get('APP_ENV') !== 'production')
+        ) {
             $msg = "\n[FATAL] Configuración de entorno ambigua detectada.\n".
                 "Se encontraron variables de entorno inyectadas pero falta 'LARAVEL_ENV_FILE'.\n";
-
-            if (defined('STDERR')) {
-                fwrite(STDERR, $msg);
-            } else {
-                error_log($msg);
-            }
-
+            defined('STDERR') ? fwrite(STDERR, $msg) : error_log($msg);
             exit(1);
         }
 
-        // Solo si el entorno está "limpio" (ej. ejecución manual php artisan), usamos el default.
-        $envFileName = $preferred;
+        $envFileName = $envMap['local'];
         $context = 'local (default fallback)';
     }
 

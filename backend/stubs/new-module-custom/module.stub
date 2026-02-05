@@ -1,0 +1,9 @@
+{
+    "name": "$STUDLY_NAME$",
+    "alias": "$LOWER_NAME$",
+    "priority": 0,
+    "providers": [
+        "Modules\\$STUDLY_NAME$\\App\\Providers\\$STUDLY_NAME$ServiceProvider",
+        "Modules\\$STUDLY_NAME$\\App\\Providers\\RouteServiceProvider"
+    ]
+} 

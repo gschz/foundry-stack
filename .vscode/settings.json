@@ -2,7 +2,7 @@
   // --- General Settings ---
   "editor.wordWrap": "bounded",
   "editor.formatOnSave": true, // Apply format on save for all files
-  "editor.rulers": [100],
+  "editor.rulers": [140],
   "files.encoding": "utf8",
   "files.autoGuessEncoding": true,
 
@@ -42,7 +42,6 @@
   "intelephense.format.braces": "per",
   "php.suggest.basic": false,
   "intelephense.files.maxSize": 5000000,
-  "intelephense.compatibility.correctForBaseClassStaticUnionTypes": true,
   "intelephense.environment.phpVersion": "8.4",
   "intelephense.completion.fullyQualifyGlobalConstantsAndFunctions": true,
   "intelephense.completion.insertUseDeclaration": true,
