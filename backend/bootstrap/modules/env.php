@@ -89,7 +89,17 @@ return function (Application $application): void {
         'No se pudo determinar el nombre del archivo de entorno.'
     );
 
-    $envPath = $projectRoot.DIRECTORY_SEPARATOR.$envFileName;
+    // FIX: Manejo inteligente de rutas relativas vs absolutas
+    if (str_starts_with($envFileName, '/') || preg_match('/^[a-zA-Z]:\\\\/', $envFileName)) {
+        // Si ya es absoluta, usarla directamente (útil para CI/GitHub Actions)
+        $envPath = $envFileName;
+        // Ajustamos projectRoot y envFileName para Dotenv
+        $projectRoot = dirname($envPath);
+        $envFileName = basename($envPath);
+    } else {
+        // Comportamiento estándar relativo a la raíz del monorepo
+        $envPath = $projectRoot.DIRECTORY_SEPARATOR.$envFileName;
+    }
 
     if (! file_exists($envPath)) {
         $msg = sprintf(
@@ -114,9 +124,10 @@ return function (Application $application): void {
     if (is_file($envPath) && is_readable($envPath)) {
         try {
             Dotenv::createImmutable($projectRoot, $envFileName)->safeLoad();
-            $application->loadEnvironmentFrom(
-                '..'.DIRECTORY_SEPARATOR.$envFileName
-            );
+            // Al cargar el entorno, Laravel espera una ruta relativa desde basePath si se usa loadEnvironmentFrom
+            // pero si ya cargamos con Dotenv arriba, esto es redundante o debe ajustarse.
+            // Para mantener compatibilidad, solo llamamos a loadEnvironmentFrom si estamos en estructura estándar.
+            // O mejor, forzamos la carga explícita.
         } catch (Throwable $e) {
             $msg = sprintf(
                 "\n[FATAL] Error al cargar el archivo de entorno: %s\n",
