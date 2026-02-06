@@ -41,12 +41,13 @@ jobs:
         working-directory: backend
         run: composer install --no-interaction --prefer-dist --no-progress
 
-      - name: Generate Ziggy routes
-        run: php backend/artisan ziggy:generate frontend/src/ziggy.js
-
       - name: Install dependencies (frontend)
         working-directory: frontend
         run: bun install --no-progress
+
+      - name: Generate Ziggy routes
+        run: php backend/artisan ziggy:generate frontend/src/ziggy.js
+
       - name: Build frontend assets
         working-directory: frontend
         run: bun run build
