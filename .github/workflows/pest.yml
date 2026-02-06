@@ -35,7 +35,7 @@ jobs:
         run: |
           echo "APP_ENV=testing" >> "$GITHUB_ENV"
           echo "APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" >> "$GITHUB_ENV"
-          echo "LARAVEL_ENV_FILE=.envs/.env.testing.example" >> "$GITHUB_ENV"
+          echo "LARAVEL_ENV_FILE=$GITHUB_WORKSPACE/.envs/.env.testing.example" >> "$GITHUB_ENV"
 
       - name: Install dependencies (backend)
         working-directory: backend
