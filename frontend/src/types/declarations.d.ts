@@ -57,5 +57,13 @@ declare module '@inertiajs/core' {
     quote: { message: string; author: string };
     sidebarOpen: boolean;
     contextualNavItems?: NavItemDefinition[];
+    globalNavItems?: NavItemDefinition[];
+    passwordChangeRequired?: boolean;
+    security?: {
+      twoFactorRequired: boolean;
+      twoFactorEnabled: boolean;
+      twoFactorPending: boolean;
+    };
+    notificationPreferences?: { email?: boolean; internal?: boolean } | Record<string, unknown>;
   }
 }

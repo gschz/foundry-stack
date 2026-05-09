@@ -6,7 +6,9 @@ namespace App\Exceptions;
 
 use Error;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Support\Env;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Request as IlluminateRequest;
 use Throwable;
 
 final class Handler extends ExceptionHandler
@@ -58,8 +60,8 @@ final class Handler extends ExceptionHandler
     {
         // Si se solicita mostrar errores detallados de Laravel o estamos en modo debug
         if (
-            \Illuminate\Support\Facades\Request::query('show_laravel_errors') !== null
-            || (bool) (\Illuminate\Support\Env::get('SHOW_LARAVEL_ERRORS', false))
+            IlluminateRequest::query('show_laravel_errors') !== null
+            || (bool) (Env::get('SHOW_LARAVEL_ERRORS', false))
             || config('app.debug')
         ) {
             // Devolver la respuesta predeterminada de Laravel con todos los detalles del error

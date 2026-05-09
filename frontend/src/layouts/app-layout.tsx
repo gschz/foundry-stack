@@ -1,6 +1,14 @@
 import AppLayoutTemplate from '@/layouts/app/app-sidebar-layout';
 import type { BreadcrumbItem, NavItemDefinition, User } from '@/types';
+import { usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
+
+function requireProp<T>(value: T | undefined, propName: string): T {
+  if (value === undefined) {
+    throw new Error(`Missing required Inertia prop: ${propName}`);
+  }
+  return value;
+}
 
 /**
  * Props extendidas para el layout principal de la aplicación.
@@ -43,19 +51,44 @@ const AppLayout = ({
   globalNavItems,
   headerActions,
   ...props
-}: ExtendedAppLayoutProps) => (
-  <AppLayoutTemplate
-    user={user}
-    breadcrumbs={breadcrumbs ?? []}
-    mainNavItems={mainNavItems ?? []}
-    moduleNavItems={moduleNavItems ?? []}
-    contextualNavItems={contextualNavItems ?? []}
-    globalNavItems={globalNavItems ?? []}
-    headerActions={headerActions}
-    {...props}
-  >
-    {children}
-  </AppLayoutTemplate>
-);
+}: ExtendedAppLayoutProps) => {
+  const pageProps = usePage().props as Partial<{
+    breadcrumbs: BreadcrumbItem[];
+    mainNavItems: NavItemDefinition[];
+    moduleNavItems: NavItemDefinition[];
+    contextualNavItems: NavItemDefinition[];
+    globalNavItems: NavItemDefinition[];
+  }>;
+
+  const resolvedBreadcrumbs = requireProp(breadcrumbs ?? pageProps.breadcrumbs, 'breadcrumbs');
+  const resolvedMainNavItems = requireProp(mainNavItems ?? pageProps.mainNavItems, 'mainNavItems');
+  const resolvedModuleNavItems = requireProp(
+    moduleNavItems ?? pageProps.moduleNavItems,
+    'moduleNavItems',
+  );
+  const resolvedContextualNavItems = requireProp(
+    contextualNavItems ?? pageProps.contextualNavItems,
+    'contextualNavItems',
+  );
+  const resolvedGlobalNavItems = requireProp(
+    globalNavItems ?? pageProps.globalNavItems,
+    'globalNavItems',
+  );
+
+  return (
+    <AppLayoutTemplate
+      user={user}
+      breadcrumbs={resolvedBreadcrumbs}
+      mainNavItems={resolvedMainNavItems}
+      moduleNavItems={resolvedModuleNavItems}
+      contextualNavItems={resolvedContextualNavItems}
+      globalNavItems={resolvedGlobalNavItems}
+      headerActions={headerActions}
+      {...props}
+    >
+      {children}
+    </AppLayoutTemplate>
+  );
+};
 
 export default AppLayout;

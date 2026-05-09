@@ -56,5 +56,6 @@ return RectorConfig::configure()
         earlyReturn: true,
         codingStyle: true,
     )
+    ->withAttributesSets()
     // Set explicit PHP version to avoid composer.json lookup from CWD
     ->withPhpSets(php84: true);

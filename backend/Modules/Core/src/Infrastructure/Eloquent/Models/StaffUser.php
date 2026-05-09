@@ -272,10 +272,6 @@ final class StaffUser extends Authenticatable implements AuthenticatableUser, Mu
             fn (): array => $this->getAllCrossGuardPermissions()
         );
 
-        if (! is_array($result)) {
-            return [];
-        }
-
         return array_values(array_filter($result, is_string(...)));
     }
 }

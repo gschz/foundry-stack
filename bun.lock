@@ -5,7 +5,7 @@
     "": {
       "name": "foundry-stack",
       "devDependencies": {
-        "concurrently": "latest",
+        "concurrently": "9.2.1",
       },
     },
     "backend": {
@@ -86,7 +86,7 @@
     },
     "packages/foundry-installer": {
       "name": "@foundry-stack/installer",
-      "version": "0.2.0-alpha",
+      "version": "0.1.0-alpha",
       "bin": {
         "foundry-installer": "./dist/index.js",
       },

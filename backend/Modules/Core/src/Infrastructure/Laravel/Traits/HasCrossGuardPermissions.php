@@ -214,7 +214,7 @@ trait HasCrossGuardPermissions
             }
         );
 
-        $names = is_array($result) ? $result : [];
+        $names = $result;
 
         return array_map(static function ($v): string {
             if (is_string($v)) {

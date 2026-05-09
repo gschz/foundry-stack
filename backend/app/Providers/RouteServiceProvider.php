@@ -120,7 +120,7 @@ final class RouteServiceProvider extends ServiceProvider
                 )
             );
 
-            return app(Ziggy::class)
+            return resolve(Ziggy::class)
                 ->filter($groupsToFilter)
                 ->toArray();
         })->middleware('web');

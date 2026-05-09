@@ -57,19 +57,6 @@ final class LoginController extends Controller
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
             'errors' => $errorMessages,
-            'postUrl' => route('login'),
-            // Textos genéricos y neutrales
-            'pageTitle' => 'Iniciar sesión',
-            'formTitle' => 'Inicio de sesión',
-            'formDescription' => 'Accede con tus credenciales',
-            'emailFieldLabel' => 'Correo electrónico',
-            'emailFieldType' => 'email',
-            'emailFieldAutoComplete' => 'email',
-            'submitButtonText' => 'Iniciar sesión',
-            'forgotPasswordUrl' => Route::has('password.request') ? route('password.request') : null,
-            // No enviar blockquote para mantener la columna derecha neutral
-            // 'blockquoteText' => null,
-            // 'blockquoteFooter' => null,
         ]);
     }
 

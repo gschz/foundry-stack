@@ -192,15 +192,6 @@ final readonly class ViewComposerService implements ViewComposerInterface
             )
         );
 
-        $navigationElements = is_array($navigationElements)
-            ? $navigationElements : [
-                'mainNavItems' => [],
-                'moduleNavItems' => [],
-                'contextualNavItems' => [],
-                'globalNavItems' => [],
-                'breadcrumbs' => [],
-            ];
-
         // Construir ítems del panel
         $panelItems = $this->navigationService
             ->buildPanelItems(
@@ -220,9 +211,9 @@ final readonly class ViewComposerService implements ViewComposerInterface
                 'panelItems' => $panelItems,
                 'mainNavItems' => $navigationElements['mainNavItems'] ?? [],
                 'moduleNavItems' => $navigationElements['moduleNavItems'] ?? [],
-                'contextualNavItems' => $navigationElements['contextualNavItems'],
-                'globalNavItems' => $navigationElements['globalNavItems'],
-                'breadcrumbs' => $navigationElements['breadcrumbs'],
+                'contextualNavItems' => $navigationElements['contextualNavItems'] ?? [],
+                'globalNavItems' => $navigationElements['globalNavItems'] ?? [],
+                'breadcrumbs' => $navigationElements['breadcrumbs'] ?? [],
                 'stats' => $statsList,
                 'pageTitle' => $functionalName,
                 'description' => $moduleDescription,

@@ -141,7 +141,7 @@ export default function ErrorPage() {
 
       {/* Gradiente superior */}
       <div
-        className={`absolute inset-0 bg-gradient-to-b ${accentColor} pointer-events-none opacity-80`}
+        className={`absolute inset-0 bg-linear-to-b ${accentColor} pointer-events-none opacity-80`}
       />
 
       {/* Patrón de fondo */}

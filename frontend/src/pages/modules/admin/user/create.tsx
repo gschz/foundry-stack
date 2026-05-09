@@ -2,8 +2,7 @@ import { useFlashToasts } from '@/hooks/use-flash-toasts';
 import { useNavigationProgress } from '@/hooks/use-navigation-progress';
 import { useToastNotifications } from '@/hooks/use-toast-notifications';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem, UserRole } from '@/types';
-import { createBreadcrumbs } from '@/utils/breadcrumbs';
+import type { UserRole } from '@/types';
 import { extractUserData } from '@/utils/user-data';
 import { Head, router, usePage } from '@inertiajs/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -47,20 +46,14 @@ export default function UserCreatePage({
       : undefined,
   );
 
-  // Fallback de breadcrumbs si no vienen desde el servidor
-  const computedBreadcrumbs: BreadcrumbItem[] =
-    breadcrumbs && breadcrumbs.length > 0
-      ? breadcrumbs
-      : createBreadcrumbs('internal.admin.users.create', 'Crear Nuevo Usuario');
-
   return (
     <AppLayout
-      breadcrumbs={computedBreadcrumbs}
+      breadcrumbs={breadcrumbs}
       user={userData}
-      contextualNavItems={contextualNavItems ?? []}
-      mainNavItems={mainNavItems ?? []}
-      moduleNavItems={moduleNavItems ?? []}
-      globalNavItems={globalNavItems ?? []}
+      contextualNavItems={contextualNavItems}
+      mainNavItems={mainNavItems}
+      moduleNavItems={moduleNavItems}
+      globalNavItems={globalNavItems}
     >
       <Head title="Crear Nuevo Usuario" />
       <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">

@@ -24,7 +24,7 @@ trait CanBeImpersonated
     public function impersonate(): bool
     {
         /** @var ImpersonatesUsersInterface $svc */
-        $svc = app(ImpersonatesUsersInterface::class);
+        $svc = resolve(ImpersonatesUsersInterface::class);
 
         return $svc->impersonate($this);
     }
@@ -37,7 +37,7 @@ trait CanBeImpersonated
     public function stopImpersonating(): bool
     {
         /** @var ImpersonatesUsersInterface $svc */
-        $svc = app(ImpersonatesUsersInterface::class);
+        $svc = resolve(ImpersonatesUsersInterface::class);
 
         return $svc->stopImpersonating();
     }
@@ -48,7 +48,7 @@ trait CanBeImpersonated
     public function isImpersonating(): bool
     {
         /** @var ImpersonatesUsersInterface $svc */
-        $svc = app(ImpersonatesUsersInterface::class);
+        $svc = resolve(ImpersonatesUsersInterface::class);
 
         return $svc->isImpersonating();
     }

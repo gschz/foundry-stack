@@ -1,3 +1,4 @@
+import type { EnhancedStat } from '@/components/modules/module-enhanced-stats-cards';
 import type {
   AuthData,
   BaseModulePageProps,
@@ -29,29 +30,19 @@ export interface PanelItem {
 }
 
 /**
- * Define la estructura de las estadísticas que se muestran en el panel de administración.
- */
-export interface AdminDashboardStats {
-  /** Número total de usuarios registrados en el sistema. */
-  totalUsers: number;
-  /** Número total de roles definidos en el sistema. */
-  totalRoles: number;
-  /** Número de acciones en la última semana. */
-  recentActivityCount: number;
-}
-
-/**
  * Props para la página principal del panel de administración (`AdminIndex`).
  */
-export interface AdminIndexPageProps extends PageProps, BaseModulePageProps<AdminDashboardStats> {
+export interface AdminIndexPageProps extends PageProps, BaseModulePageProps<EnhancedStat[]> {
   /** Ítems de navegación de módulo conformes al contrato unificado. */
-  panelItems?: ModuleNavItem[];
-  /** Ítems de navegación principal para el layout. */
-  mainNavItems?: NavItemDefinition[];
-  /** Ítems de navegación de módulos para el layout. */
-  moduleNavItems?: NavItemDefinition[];
-  /** Ítems de navegación global para el layout (configuración). */
-  globalNavItems?: NavItemDefinition[];
+  panelItems: ModuleNavItem[];
+  contextualNavItems: NavItemDefinition[];
+  breadcrumbs: BreadcrumbItem[];
+  pageTitle: string;
+  description: string;
+  mainNavItems: NavItemDefinition[];
+  moduleNavItems: NavItemDefinition[];
+  globalNavItems: NavItemDefinition[];
+  stats: EnhancedStat[];
 }
 
 /**
@@ -65,8 +56,11 @@ export interface UserListPageProps {
     sort_field?: string;
     sort_direction?: string;
   };
-  contextualNavItems?: NavItemDefinition[];
-  breadcrumbs?: BreadcrumbItem[];
+  contextualNavItems: NavItemDefinition[];
+  breadcrumbs: BreadcrumbItem[];
+  mainNavItems: NavItemDefinition[];
+  moduleNavItems: NavItemDefinition[];
+  globalNavItems: NavItemDefinition[];
   auth: AuthData;
   flash?: {
     success?: string | null;
@@ -83,11 +77,11 @@ export interface UserEditPageProps {
   user: StaffUser;
   roles: UserRole[];
   auth: { user: User };
-  contextualNavItems?: NavItemDefinition[];
-  mainNavItems?: NavItemDefinition[];
-  moduleNavItems?: NavItemDefinition[];
-  globalNavItems?: NavItemDefinition[];
-  breadcrumbs?: BreadcrumbItem[];
+  contextualNavItems: NavItemDefinition[];
+  mainNavItems: NavItemDefinition[];
+  moduleNavItems: NavItemDefinition[];
+  globalNavItems: NavItemDefinition[];
+  breadcrumbs: BreadcrumbItem[];
   _errors?: Record<string, string>;
   flash?: {
     success?: string | null;
@@ -103,11 +97,11 @@ export interface UserEditPageProps {
 export interface UserCreatePageProps {
   roles: UserRole[];
   auth: { user: User };
-  contextualNavItems?: NavItemDefinition[];
-  mainNavItems?: NavItemDefinition[];
-  moduleNavItems?: NavItemDefinition[];
-  globalNavItems?: NavItemDefinition[];
-  breadcrumbs?: BreadcrumbItem[];
+  contextualNavItems: NavItemDefinition[];
+  mainNavItems: NavItemDefinition[];
+  moduleNavItems: NavItemDefinition[];
+  globalNavItems: NavItemDefinition[];
+  breadcrumbs: BreadcrumbItem[];
   _errors?: Record<string, string>;
   flash?: {
     success?: string | null;

@@ -49,7 +49,6 @@ export function UserMenuContent({ user }: Readonly<UserMenuContentProps>) {
                 onClick={cleanup}
               >
                 <Settings className="mr-2" />
-                Configuración
                 Configuración de perfil
               </Link>
             </DropdownMenuItem>

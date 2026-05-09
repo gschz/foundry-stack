@@ -21,7 +21,7 @@ export function ZiggyDebug() {
           Routes: {routeCount}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[400px] overflow-auto sm:w-[540px]">
+      <SheetContent className="w-100 overflow-auto sm:w-135">
         <SheetHeader>
           <SheetTitle>Ziggy Routes ({routeCount})</SheetTitle>
         </SheetHeader>

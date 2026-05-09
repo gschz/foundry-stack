@@ -23,10 +23,10 @@ import { processNavItems } from './sidebar/process-nav-items';
  */
 interface AppSidebarProps {
   user: User | null;
-  mainNavItems?: NavItemDefinition[];
-  moduleNavItems?: NavItemDefinition[];
-  contextualNavItems?: NavItemDefinition[];
-  globalNavItems?: NavItemDefinition[];
+  mainNavItems: NavItemDefinition[];
+  moduleNavItems: NavItemDefinition[];
+  contextualNavItems: NavItemDefinition[];
+  globalNavItems: NavItemDefinition[];
 }
 
 /**
@@ -35,10 +35,10 @@ interface AppSidebarProps {
  */
 export function AppSidebar({
   user,
-  mainNavItems = [],
-  moduleNavItems = [],
-  contextualNavItems = [],
-  globalNavItems = [],
+  mainNavItems,
+  moduleNavItems,
+  contextualNavItems,
+  globalNavItems,
 }: Readonly<AppSidebarProps>) {
   // Obtener información de la página actual
   const { component, url } = usePage();

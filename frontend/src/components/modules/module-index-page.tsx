@@ -7,7 +7,10 @@ import type { ReactNode } from 'react';
 export interface ModuleIndexPageProps {
   user: StaffUser | null;
   breadcrumbs: BreadcrumbItem[];
-  contextualNavItems?: NavItemDefinition[];
+  mainNavItems: NavItemDefinition[];
+  moduleNavItems: NavItemDefinition[];
+  contextualNavItems: NavItemDefinition[];
+  globalNavItems: NavItemDefinition[];
   pageTitle: string;
   description?: string;
   staffUserName: string;
@@ -19,7 +22,10 @@ export interface ModuleIndexPageProps {
 export function ModuleIndexPage({
   user,
   breadcrumbs,
-  contextualNavItems = [],
+  mainNavItems,
+  moduleNavItems,
+  contextualNavItems,
+  globalNavItems,
   pageTitle,
   description = '',
   staffUserName,
@@ -31,7 +37,10 @@ export function ModuleIndexPage({
     <AppLayout
       user={user}
       breadcrumbs={breadcrumbs}
+      mainNavItems={mainNavItems}
+      moduleNavItems={moduleNavItems}
       contextualNavItems={contextualNavItems}
+      globalNavItems={globalNavItems}
       pageTitle={pageTitle}
       pageDescription={description}
     >

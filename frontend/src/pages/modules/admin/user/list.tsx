@@ -13,7 +13,6 @@ import AppLayout from '@/layouts/app-layout';
 import { ModuleDashboardLayout } from '@/layouts/module-dashboard-layout';
 import { UserActionsCell } from '@/pages/modules/admin/components/user/user-actions-cell';
 import type { Paginated, PaginatedLinks, PaginatedMeta, StaffUser } from '@/types';
-import { createBreadcrumbs } from '@/utils/breadcrumbs';
 import { extractUserData } from '@/utils/user-data';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { type ColumnDef, type SortingState } from '@tanstack/react-table';
@@ -158,6 +157,9 @@ export default function UserListPage({
   users: initialUsers,
   filters: rawFilters,
   contextualNavItems,
+  mainNavItems,
+  moduleNavItems,
+  globalNavItems,
   breadcrumbs,
   flash,
 }: Readonly<UserListPageProps>) {
@@ -233,7 +235,7 @@ export default function UserListPage({
             <div className="flex items-center space-x-2">
               <User className="text-muted-foreground h-4 w-4" />
               <div className="flex items-center gap-2">
-                <span className="max-w-[120px] truncate font-medium sm:max-w-full">
+                <span className="max-w-30 truncate font-medium sm:max-w-full">
                   {row.original.name}
                 </span>
                 {isCurrentUser && (
@@ -257,7 +259,7 @@ export default function UserListPage({
         cell: ({ row }) => (
           <div className="flex items-center space-x-2">
             <Mail className="text-muted-foreground h-4 w-4" />
-            <span className="max-w-[180px] truncate sm:max-w-[250px] md:max-w-[300px]">
+            <span className="max-w-45 truncate sm:max-w-62.5 md:max-w-75">
               {row.original.email}
             </span>
           </div>
@@ -346,23 +348,14 @@ export default function UserListPage({
     return null;
   }
 
-  // Fallback de breadcrumbs si no vienen desde el servidor
-  const computedBreadcrumbs =
-    breadcrumbs && breadcrumbs.length > 0
-      ? breadcrumbs.map((b) => ({
-          ...b,
-          href:
-            typeof b.href === 'string' && !b.href.startsWith('http') && b.href !== '#'
-              ? route(b.href)
-              : b.href,
-        }))
-      : createBreadcrumbs('internal.admin.users.index', 'Lista de Usuarios');
-
   return (
     <AppLayout
       user={userData}
-      contextualNavItems={contextualNavItems ?? []}
-      breadcrumbs={computedBreadcrumbs}
+      breadcrumbs={breadcrumbs}
+      contextualNavItems={contextualNavItems}
+      mainNavItems={mainNavItems}
+      moduleNavItems={moduleNavItems}
+      globalNavItems={globalNavItems}
     >
       <Head title="Lista de Usuarios" />
       <ModuleDashboardLayout
@@ -379,65 +372,61 @@ export default function UserListPage({
           </Link>
         }
         mainContent={
-          <div className="w-full px-6 py-6">
-            <TableCardShell
-              title="Todos los usuarios"
-              totalBadge={
-                <>
-                  <Badge variant="outline">{totalUsers} total</Badge>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info
-                        className="text-muted-foreground h-4 w-4 cursor-help"
-                        tabIndex={0}
-                        aria-label="Información sobre la lista de usuarios"
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Lista completa de usuarios con acceso al sistema
-                    </TooltipContent>
-                  </Tooltip>
-                </>
-              }
-              rightHeaderContent={
-                <div className="w-full sm:w-auto sm:min-w-[300px]">
-                  <Input
-                    type="search"
-                    placeholder="Buscar por nombre o email..."
-                    aria-label="Buscar usuarios por nombre o email"
-                    value={search}
-                    onChange={(e) => {
-                      setSearch(e.target.value);
-                    }}
-                    className="w-full"
-                  />
-                </div>
-              }
-            >
-              <TanStackDataTable<StaffUser, unknown>
-                columns={columns}
-                data={normalizedUsers.data}
-                searchable={false}
-                paginated={true}
-                serverPagination={{
-                  pageIndex: pagination.pageIndex,
-                  pageSize: pagination.pageSize,
-                  pageCount: Math.max(1, lastPage),
-                  onPaginationChange: handleServerPaginationChange,
-                }}
-                pageSizeOptions={[10, 20, 50, 100]}
-                totalItems={totalUsers}
-                onSortingChange={(next) => {
-                  setSorting(next);
-                }}
-                initialSorting={sorting}
-                loading={isLoading}
-                skeletonRowCount={10}
-                noDataTitle="Sin usuarios"
-                noDataMessage="No se encontraron usuarios para mostrar."
-              />
-            </TableCardShell>
-          </div>
+          <TableCardShell
+            title="Todos los usuarios"
+            totalBadge={
+              <>
+                <Badge variant="outline">{totalUsers} total</Badge>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info
+                      className="text-muted-foreground h-4 w-4 cursor-help"
+                      tabIndex={0}
+                      aria-label="Información sobre la lista de usuarios"
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>Lista completa de usuarios con acceso al sistema</TooltipContent>
+                </Tooltip>
+              </>
+            }
+            rightHeaderContent={
+              <div className="w-full sm:w-auto sm:min-w-75">
+                <Input
+                  type="search"
+                  placeholder="Buscar por nombre o email..."
+                  aria-label="Buscar usuarios por nombre o email"
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                  }}
+                  className="w-full"
+                />
+              </div>
+            }
+          >
+            <TanStackDataTable<StaffUser, unknown>
+              columns={columns}
+              data={normalizedUsers.data}
+              searchable={false}
+              paginated={true}
+              serverPagination={{
+                pageIndex: pagination.pageIndex,
+                pageSize: pagination.pageSize,
+                pageCount: Math.max(1, lastPage),
+                onPaginationChange: handleServerPaginationChange,
+              }}
+              pageSizeOptions={[10, 20, 50, 100]}
+              totalItems={totalUsers}
+              onSortingChange={(next) => {
+                setSorting(next);
+              }}
+              initialSorting={sorting}
+              loading={isLoading}
+              skeletonRowCount={10}
+              noDataTitle="Sin usuarios"
+              noDataMessage="No se encontraron usuarios para mostrar."
+            />
+          </TableCardShell>
         }
         fullWidth={true}
       />

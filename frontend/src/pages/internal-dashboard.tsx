@@ -2,10 +2,7 @@
  * Página de Dashboard interno
  * Presenta módulos disponibles, estadísticas y navegación contextual.
  */
-import {
-  EnhancedStatsCards,
-  type EnhancedStat,
-} from '@/components/modules/module-enhanced-stats-cards';
+import { EnhancedStatsCards, type EnhancedStat } from '@/components/modules/module-enhanced-stats-cards';
 import { ModuleNavCards } from '@/components/modules/module-nav-cards';
 import { EnhancedStatsCardsSkeleton } from '@/components/modules/skeletons/module-enhanced-stats-cards-skeleton';
 import { ModuleNavCardsSkeleton } from '@/components/modules/skeletons/module-nav-cards-skeleton';
@@ -53,15 +50,19 @@ interface DashboardPageProps extends PageProps {
   /** Estadísticas del sistema proporcionadas por el backend (opcional) */
   systemStats?: EnhancedStat[];
   /** Título de la página proporcionado por el backend */
-  pageTitle?: string;
+  pageTitle: string;
   /** Descripción de la página proporcionada por el backend */
-  description?: string;
+  description: string;
   /** Ítems de navegación principal */
-  mainNavItems?: NavItemDefinition[];
+  mainNavItems: NavItemDefinition[];
   /** Ítems de navegación de módulos */
-  moduleNavItems?: NavItemDefinition[];
+  moduleNavItems: NavItemDefinition[];
+  /** Ítems de navegación contextual */
+  contextualNavItems: NavItemDefinition[];
   /** Ítems de navegación global para la barra lateral */
-  globalNavItems?: NavItemDefinition[];
+  globalNavItems: NavItemDefinition[];
+  /** Breadcrumbs entregados por backend */
+  breadcrumbs: BreadcrumbItem[];
 }
 
 /**
@@ -77,8 +78,10 @@ export default function DashboardPage() {
     accessibleModules: accessibleModulesFromBackend,
     restrictedModules: restrictedModulesFromBackend,
     flash,
+    breadcrumbs,
     mainNavItems,
     moduleNavItems,
+    contextualNavItems,
     globalNavItems,
     systemStats,
     pageTitle,
@@ -97,9 +100,6 @@ export default function DashboardPage() {
     isMainDashboard: true,
   });
 
-  // Usar exclusivamente breadcrumbs provenientes del backend (si existen)
-  const { breadcrumbs } = usePage<DashboardPageProps & { breadcrumbs?: BreadcrumbItem[] }>().props;
-
   // Consumir únicamente las listas entregadas por el backend; si faltan, mostrar skeletons en UI
   const accessibleModules = useMemo(
     () => (Array.isArray(accessibleModulesFromBackend) ? accessibleModulesFromBackend : []),
@@ -117,11 +117,6 @@ export default function DashboardPage() {
     href: module.href,
     icon: module.icon as IconName,
   }));
-
-  // Usar únicamente navegación contextual si viene del backend
-  const { contextualNavItems } = usePage<
-    DashboardPageProps & { contextualNavItems?: NavItemDefinition[] }
-  >().props;
 
   const statsSection = useMemo(
     () =>
@@ -163,9 +158,7 @@ export default function DashboardPage() {
             <div className="mb-8">
               <div className="mb-6">
                 <h2 className="text-foreground text-xl font-semibold">Módulos disponibles</h2>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  Seleccione un módulo para acceder a sus funciones.
-                </p>
+                <p className="text-muted-foreground mt-1 text-sm">Seleccione un módulo para acceder a sus funciones.</p>
               </div>
               <ModuleNavCards items={accessibleModuleNavItems} getIconComponent={getLucideIcon} />
             </div>
@@ -175,18 +168,13 @@ export default function DashboardPage() {
             <div className="mb-8">
               <div className="mb-6">
                 <h2 className="text-foreground text-xl font-semibold">Módulos restringidos</h2>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  No tiene acceso a estos módulos.
-                </p>
+                <p className="text-muted-foreground mt-1 text-sm">No tiene acceso a estos módulos.</p>
               </div>
               <div className="grid grid-cols-1 gap-5 opacity-70 sm:grid-cols-2 lg:grid-cols-3">
                 {restrictedModules.map((module) => {
                   const IconComponent = getLucideIcon(module.icon);
                   return (
-                    <div
-                      key={module.name}
-                      className="group border-border bg-muted/30 block h-full overflow-hidden rounded-lg border"
-                    >
+                    <div key={module.name} className="group border-border bg-muted/30 block h-full overflow-hidden rounded-lg border">
                       <div className="border-border flex flex-row items-center justify-between space-y-0 border-b p-4">
                         <h3 className="text-foreground text-xl font-semibold">{module.name}</h3>
                         <div className="bg-muted rounded-full p-2.5">
@@ -204,7 +192,7 @@ export default function DashboardPage() {
                           <Skeleton className="h-4 w-64 rounded-md" />
                         )}
                         <div className="mt-8 flex items-center justify-center space-x-2 rounded-md border border-yellow-200 bg-yellow-50 p-2 text-sm text-yellow-700 dark:border-yellow-700/50 dark:bg-yellow-900/30 dark:text-yellow-400">
-                          <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
+                          <LayoutDashboard className="h-4 w-4 shrink-0" />
                           <span>Acceso restringido</span>
                         </div>
                       </div>
@@ -237,18 +225,18 @@ export default function DashboardPage() {
   return (
     <AppLayout
       user={userData}
-      breadcrumbs={breadcrumbs ?? []}
-      mainNavItems={mainNavItems ?? []}
-      moduleNavItems={moduleNavItems ?? []}
-      contextualNavItems={contextualNavItems ?? []}
-      globalNavItems={globalNavItems ?? []}
-      pageTitle={pageTitle ?? ''}
-      pageDescription={description ?? ''}
+      breadcrumbs={breadcrumbs}
+      mainNavItems={mainNavItems}
+      moduleNavItems={moduleNavItems}
+      contextualNavItems={contextualNavItems}
+      globalNavItems={globalNavItems}
+      pageTitle={pageTitle}
+      pageDescription={description}
     >
-      <Head title={pageTitle ?? ''} />
+      <Head title={pageTitle} />
       <ModuleDashboardLayout
-        title={pageTitle ?? ''}
-        description={description ?? ''}
+        title={pageTitle}
+        description={description}
         userName={userData?.name ?? ''}
         stats={statsSection}
         mainContent={mainContent}

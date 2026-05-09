@@ -30,7 +30,7 @@ trait PermissionVerifier
             ? ($permissionName[0] ?? '')
             : $permissionName;
 
-        return app(PermissionVerifierInterface::class)->checkCrossGuard(
+        return resolve(PermissionVerifierInterface::class)->checkCrossGuard(
             $user,
             $permission
         );

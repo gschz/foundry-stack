@@ -97,8 +97,7 @@ export const getLucideIcon = (iconName?: string | LucideIcon | null): LucideIcon
   if (!iconName) return null;
   if (typeof iconName !== 'string') return iconName;
 
-  // Normalizar el nombre del ícono (eliminar espacios, convertir a minúsculas)
-  const normalizedName = iconName.toLowerCase().trim();
+  const normalizedName = iconName.toLowerCase().replaceAll(/[^a-z0-9]/g, '');
 
   // Mapeo de nombres normalizados a componentes de LucideIcon
   // Esto reemplaza la declaración switch para reducir el número de casos y mejorar la escalabilidad.

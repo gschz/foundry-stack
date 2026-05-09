@@ -1,4 +1,10 @@
-import type { BaseModulePageProps } from '@/types';
+import type { EnhancedStat } from '@/components/modules/module-enhanced-stats-cards';
+import type {
+  BaseModulePageProps,
+  BreadcrumbItem,
+  ModuleNavItem,
+  NavItemDefinition,
+} from '@/types';
 import type { PageProps } from '@inertiajs/core';
 
 /**
@@ -8,10 +14,14 @@ import type { PageProps } from '@inertiajs/core';
  * Nota: `stats` contiene contadores agregados entregados por el backend y
  * usados para componer `EnhancedStatsCards` en la UI.
  */
-export interface Module02IndexPageProps
-  extends PageProps,
-    BaseModulePageProps<{
-      // Props de ej. para las stats del módulo
-      /** Número total de solicitudes registradas */
-      totalRequests?: number;
-    }> {}
+export interface Module02IndexPageProps extends PageProps, BaseModulePageProps {
+  panelItems: ModuleNavItem[];
+  mainNavItems: NavItemDefinition[];
+  moduleNavItems: NavItemDefinition[];
+  contextualNavItems: NavItemDefinition[];
+  globalNavItems: NavItemDefinition[];
+  breadcrumbs: BreadcrumbItem[];
+  pageTitle: string;
+  description: string;
+  stats: EnhancedStat[];
+}

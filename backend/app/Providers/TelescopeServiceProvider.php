@@ -11,22 +11,15 @@ use Laravel\Telescope\TelescopeApplicationServiceProvider;
 
 /**
  * Proveedor de servicios para Laravel Telescope.
- *
- * Este proveedor configura el comportamiento de Telescope, incluyendo el registro de entradas,
- * la ofuscación de datos sensibles y el control de acceso al panel de Telescope.
  */
 final class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 {
     /**
      * Registra los servicios de la aplicación para Telescope.
-     *
-     * Este método se encarga de registrar los filtros que determinan qué información
-     * se captura y se muestra en el panel de Telescope.
      */
     public function register(): void
     {
-        // Activar el tema oscuro de Telescope (opcional, descomentar si se desea).
-        // Telescope::night();
+        Telescope::night();
 
         // Oculta detalles sensibles de las peticiones para proteger la privacidad.
         $this->hideSensitiveRequestDetails();
@@ -65,20 +58,15 @@ final class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 
     /**
      * Registra la puerta de acceso (gate) para Telescope.
-     *
-     * Esta puerta determina quién puede acceder a Telescope en entornos no locales.
-     * Es una medida de seguridad crucial para proteger la información de depuración.
      */
     protected function gate(): void
     {
         Gate::define('viewTelescope', function ($user): bool {
-            // Asegurar que $user es un objeto válido antes de invocar métodos
             if (! is_object($user)) {
                 return false;
             }
 
             // Por defecto, solo los usuarios con roles de 'ADMIN' o 'DEV' pueden acceder a Telescope.
-            // Esto previene la exposición de datos sensibles a usuarios no autorizados.
             if (method_exists($user, 'hasRole')) {
                 if ($user->hasRole('ADMIN')) {
                     return true;
@@ -93,9 +81,6 @@ final class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 
     /**
      * Evita que detalles sensibles de las peticiones sean registrados por Telescope.
-     *
-     * En entornos no locales, se ofuscan parámetros y cabeceras que puedan contener
-     * información sensible como tokens o cookies.
      */
     private function hideSensitiveRequestDetails(): void
     {

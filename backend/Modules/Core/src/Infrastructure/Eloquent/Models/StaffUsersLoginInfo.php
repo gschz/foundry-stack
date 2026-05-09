@@ -41,7 +41,7 @@ final class StaffUsersLoginInfo extends Model
      * Umbral de similitud para la comparación de agentes de usuario.
      * Se usa para tolerar variaciones menores en las versiones de los navegadores.
      */
-    protected const int USER_AGENT_SIMILARITY_THRESHOLD = 80;
+    private const int USER_AGENT_SIMILARITY_THRESHOLD = 80;
 
     /**
      * El nombre de la tabla asociada con el modelo.

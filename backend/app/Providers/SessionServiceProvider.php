@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use Illuminate\Auth\Events\Login;
+use Illuminate\Contracts\Config\Repository;
+use Illuminate\Contracts\Container\Container;
+use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\QueryException;
 use Illuminate\Session\DatabaseSessionHandler;
+use Illuminate\Session\SessionManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
@@ -21,48 +26,41 @@ final class SessionServiceProvider extends ServiceProvider
 {
     /**
      * Registra los servicios de sesión personalizados.
-     *
-     * Aquí se extiende el manejador de sesiones de base de datos de Laravel para reemplazarlo
-     * con nuestra implementación personalizada (CustomDatabaseSessionHandler).
      */
     public function register(): void
     {
         $this->app->resolving(
             'session',
-            function (
-                \Illuminate\Session\SessionManager $sessionManager
-            ): void {
+            function (SessionManager $sessionManager): void {
                 $sessionManager->extend(
                     'database',
-                    function (
-                        \Illuminate\Contracts\Container\Container $app
-                    ): CustomDatabaseSessionHandler {
-                        /** @var \Illuminate\Contracts\Config\Repository $configRepo */
-                        $configRepo = $app->make(\Illuminate\Contracts\Config\Repository::class);
+                    function (Container $app): CustomDatabaseSessionHandler {
+                        /** @var Repository $configRepo */
+                        $configRepo = $app->make(Repository::class);
 
                         /** @var array<string, mixed> $config */
                         $config = (array) $configRepo->get('session', []);
 
-                        $tableValue = $config['table'] ?? $configRepo->get('session.table');
-                        $table = is_string($tableValue) ? $tableValue : 'sessions';
-
-                        $lifetimeValue = $config['lifetime'] ?? $configRepo->get('session.lifetime');
+                        $tableValue = $config['table']
+                            ?? $configRepo->get('session.table');
+                        $table = is_string($tableValue)
+                            ? $tableValue : 'sessions';
+                        $lifetimeValue = $config['lifetime']
+                            ?? $configRepo->get('session.lifetime');
                         $lifetime = is_int($lifetimeValue)
                             ? $lifetimeValue
                             : (is_string($lifetimeValue)
-                                ? (int) $lifetimeValue
-                                : 120
+                                ? (int) $lifetimeValue : 120
                             );
-
-                        $connectionValue = $config['connection'] ?? $configRepo->get('session.connection');
+                        $connectionValue = $config['connection']
+                            ?? $configRepo->get('session.connection');
 
                         /** @var string|UnitEnum|null $connection */
                         $connection = $connectionValue instanceof UnitEnum || is_string($connectionValue)
-                            ? $connectionValue
-                            : null;
+                            ? $connectionValue : null;
 
-                        /** @var \Illuminate\Database\DatabaseManager $db */
-                        $db = $app->make(\Illuminate\Database\DatabaseManager::class);
+                        /** @var DatabaseManager $db */
+                        $db = $app->make(DatabaseManager::class);
 
                         /** @var \Illuminate\Database\ConnectionInterface $connectionInstance */
                         $connectionInstance = $db->connection($connection);
@@ -81,9 +79,6 @@ final class SessionServiceProvider extends ServiceProvider
 
     /**
      * Arranca los servicios de sesión.
-     *
-     * Este método define un listener para el evento de login que se encarga de una
-     * casuística específica para entornos de prueba que usan SQLite.
      */
     public function boot(): void
     {
@@ -92,15 +87,15 @@ final class SessionServiceProvider extends ServiceProvider
 
         // Escucha el evento de login para sincronizar el 'user_id' en entornos SQLite.
         Event::listen(
-            \Illuminate\Auth\Events\Login::class,
-            function (\Illuminate\Auth\Events\Login $event): void {
+            Login::class,
+            function (Login $event): void {
                 // Esta lógica es una solución temporal para cuando se usa SQLite en pruebas.
                 // Algunas partes de Laravel o paquetes de terceros pueden depender de la columna 'user_id',
                 // y este listener asegura que se rellene después del login, aunque nuestro manejador
                 // personalizado se centre en 'staff_user_id'.
 
-                /** @var \Illuminate\Contracts\Config\Repository $configRepo */
-                $configRepo = $this->app->make(\Illuminate\Contracts\Config\Repository::class);
+                /** @var Repository $configRepo */
+                $configRepo = $this->app->make(Repository::class);
 
                 $sessionConnectionValue = $configRepo->get(
                     'session.connection'
@@ -122,7 +117,7 @@ final class SessionServiceProvider extends ServiceProvider
                     DB::table($table)
                         ->where(
                             'id',
-                            $this->app->make(\Illuminate\Session\SessionManager::class)->getId()
+                            $this->app->make(SessionManager::class)->getId()
                         )
                         ->update(
                             ['user_id' => $user->getAuthIdentifier()]

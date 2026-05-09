@@ -5,16 +5,14 @@ declare(strict_types=1);
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
  * Notificación de seguridad enviada cuando se actualizan los datos de la cuenta de un usuario.
- *
- * Esta notificación se pone en cola para no impactar el rendimiento. Informa al usuario
- * sobre los campos que han cambiado, mostrando los valores antiguos y nuevos cuando
- * sea aplicable, y proporciona un enlace para revisar la cuenta.
  */
 final class AccountUpdatedNotification extends Notification implements ShouldQueue
 {
@@ -30,7 +28,9 @@ final class AccountUpdatedNotification extends Notification implements ShouldQue
     public function __construct(
         public array $changes = [],
         public ?string $ipAddress = null
-    ) {}
+    ) {
+        //
+    }
 
     /**
      * Obtiene los canales de entrega de la notificación.
@@ -45,25 +45,19 @@ final class AccountUpdatedNotification extends Notification implements ShouldQue
     /**
      * Construye la representación por correo electrónico de la notificación.
      *
-     * @param  \Illuminate\Database\Eloquent\Model&\Illuminate\Contracts\Auth\Authenticatable  $notifiable  La entidad que recibe la notificación.
+     * @param  Model&Authenticatable  $notifiable  La entidad que recibe la notificación.
      * @return MailMessage El mensaje de correo electrónico configurado.
      */
     public function toMail(object $notifiable): MailMessage
     {
         // --- Construcción del Mensaje Principal ---
         $nameValue = $notifiable->getAttribute('name');
-        $nameSafe = is_string($nameValue) ? $nameValue : '';
+        $displayName = is_string($nameValue) ? $nameValue : 'Usuario';
 
         $message = (new MailMessage)
-            ->subject(
-                'Alerta de Seguridad: Cambios en tu cuenta'
-            )
-            ->greeting(
-                sprintf('¡Hola %s!', $nameSafe)
-            )
-            ->line(
-                'Hemos detectado que se han realizado los siguientes cambios en tu cuenta:'
-            );
+            ->subject('Alerta de Seguridad: Cambios en tu cuenta')
+            ->greeting(sprintf('¡Hola %s!', $displayName))
+            ->line('Hemos detectado que se han realizado los siguientes cambios en tu cuenta:');
 
         // --- Detalle de los Cambios ---
         // Itera sobre los cambios y los añade al cuerpo del correo.
@@ -76,35 +70,47 @@ final class AccountUpdatedNotification extends Notification implements ShouldQue
                 if ($field === 'password') {
                     $message->line('- Se ha cambiado tu contraseña.');
                 } else {
-                    $message->line(sprintf("- **%s**: cambiado de '%s' a '%s'.", $this->getFieldName($field), $oldValue, $newValue));
+                    $message->line(
+                        sprintf(
+                            "- **%s**: cambiado de '%s' a '%s'.",
+                            $this->getFieldName($field),
+                            $oldValue,
+                            $newValue
+                        )
+                    );
                 }
             } else {
                 // Si solo tenemos el campo que cambió
-                $message->line(sprintf('- Se actualizó: **%s**.', $this->getFieldName($field)));
+                $message->line(
+                    sprintf(
+                        '- Se actualizó: **%s**.',
+                        $this->getFieldName($field)
+                    )
+                );
             }
         }
 
         // --- Información Adicional y Acciones ---
         $message->line(
-            'Estos cambios se realizaron el '.now()->format('d/m/Y').' a las '.now()->format('H:i:s').'.'
+            sprintf(
+                'Estos cambios se realizaron el **%s** a las **%s**.',
+                now()->format('d/m/Y'),
+                now()->format('H:i:s')
+            )
         );
 
         if (! in_array($this->ipAddress, [null, '', '0'], true)) {
             $message->line(
-                sprintf('Cambios realizados desde la dirección IP: %s.', $this->ipAddress)
+                sprintf(
+                    'Cambios realizados desde la dirección IP: %s.',
+                    $this->ipAddress
+                )
             );
         }
 
-        $message->line(
-            'Si no reconoces estos cambios, por favor contacta inmediatamente con soporte.'
-        )
-            ->action(
-                'Ir a mi cuenta',
-                route('settings.profile')
-            )
-            ->line(
-                'Este es un correo electrónico automático de seguridad. Por favor, no respondas a este mensaje.'
-            );
+        $message->line('Si no reconoces estos cambios, por favor contacta inmediatamente con soporte.')
+            ->action('Ir a mi cuenta', route('internal.staff.profile.edit'))
+            ->line('Este es un correo electrónico automático de seguridad. Por favor, no respondas a este mensaje.');
 
         return $message;
     }
@@ -112,10 +118,6 @@ final class AccountUpdatedNotification extends Notification implements ShouldQue
     /**
      * Obtiene la representación de la notificación como un array.
      *
-     * Esto es útil para almacenar la notificación en la base de datos o para enviarla
-     * a través de canales que no son de correo, como Web Push.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model&\Illuminate\Contracts\Auth\Authenticatable  $notifiable  La entidad que recibe la notificación.
      * @return array<string, mixed> Los datos de la notificación.
      */
     public function toArray(object $notifiable): array
@@ -129,9 +131,6 @@ final class AccountUpdatedNotification extends Notification implements ShouldQue
 
     /**
      * Obtiene un nombre de campo legible para el usuario.
-     *
-     * Este método de ayuda traduce los nombres de los campos de la base de datos
-     * (ej. 'profile_photo') a un formato más amigable para el usuario (ej. 'Foto de perfil').
      *
      * @param  string  $field  El nombre del campo de la base de datos.
      * @return string El nombre del campo formateado para el usuario.
@@ -154,9 +153,6 @@ final class AccountUpdatedNotification extends Notification implements ShouldQue
 
     /**
      * Formatea un valor para su visualización segura en el correo electrónico.
-     *
-     * Este método de ayuda se encarga de ofuscar datos sensibles como las contraseñas
-     * y de convertir arrays en una cadena legible.
      *
      * @param  string  $field  El nombre del campo al que pertenece el valor.
      * @param  mixed  $value  El valor a formatear.

@@ -14,7 +14,7 @@ interface NavMainProps {
   label?: string;
 }
 
-export function NavMain({ items = [], label }: Readonly<NavMainProps>) {
+export function NavMain({ items, label }: Readonly<NavMainProps>) {
   const page = usePage();
   return (
     <SidebarGroup className="px-2 py-0">

@@ -12,7 +12,7 @@ export default function AppLogo() {
         <AppLogoIcon className="size-6" />
       </div>
       <div className="ml-1 grid flex-1 text-left text-sm">
-        <span className="mb-0.5 truncate leading-none font-semibold"></span>
+        <span className="mb-0.5 truncate leading-none font-semibold">Foundry Stack</span>
       </div>
     </>
   );

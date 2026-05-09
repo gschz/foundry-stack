@@ -36,6 +36,47 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       emptyOutDir: true,
+      chunkSizeWarningLimit: 1024,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom', 'react-day-picker'],
+            'ui-vendor': [
+              '@radix-ui/react-accordion',
+              '@radix-ui/react-alert-dialog',
+              '@radix-ui/react-avatar',
+              '@radix-ui/react-checkbox',
+              '@radix-ui/react-collapsible',
+              '@radix-ui/react-dialog',
+              '@radix-ui/react-dropdown-menu',
+              '@radix-ui/react-icons',
+              '@radix-ui/react-label',
+              '@radix-ui/react-navigation-menu',
+              '@radix-ui/react-popover',
+              '@radix-ui/react-progress',
+              '@radix-ui/react-radio-group',
+              '@radix-ui/react-scroll-area',
+              '@radix-ui/react-select',
+              '@radix-ui/react-separator',
+              '@radix-ui/react-slot',
+              '@radix-ui/react-switch',
+              '@radix-ui/react-tabs',
+              '@radix-ui/react-toast',
+              '@radix-ui/react-toggle',
+              '@radix-ui/react-toggle-group',
+              '@radix-ui/react-tooltip',
+              'lucide-react',
+              'sonner',
+              'class-variance-authority',
+              'clsx',
+              'tailwind-merge',
+            ],
+            'tanstack-vendor': ['@tanstack/react-form', '@tanstack/react-query', '@tanstack/react-table'],
+            'inertia-vendor': ['@inertiajs/react', '@inertiajs/core', 'axios'],
+            'motion-vendor': ['motion', 'tailwindcss-animate'],
+          },
+        },
+      },
     },
     plugins: [
       laravel({
@@ -49,7 +90,9 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(import.meta.dirname, 'src'),
+        '/fonts': path.resolve(import.meta.dirname, '../backend/public/fonts'),
       },
+      extensions: ['.tsx', '.ts', '.js', '.json'],
     },
   };
 });

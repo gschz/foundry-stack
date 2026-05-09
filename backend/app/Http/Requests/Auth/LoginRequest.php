@@ -91,7 +91,7 @@ final class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $loginAttemptService = app(LoginAttemptInterface::class);
+        $loginAttemptService = resolve(LoginAttemptInterface::class);
         $credentials = $this->getCredentials();
         $rawIdentifier = $this->input('email');
         $identifier = is_string($rawIdentifier)
@@ -173,7 +173,7 @@ final class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        $loginAttemptService = app(LoginAttemptInterface::class);
+        $loginAttemptService = resolve(LoginAttemptInterface::class);
         $rawIdentifier = $this->input('email');
         $identifier = is_string($rawIdentifier) ? $rawIdentifier : '';
         $ipRaw = $this->ip();
@@ -252,7 +252,7 @@ final class LoginRequest extends FormRequest
         /** @var class-string<\Illuminate\Database\Eloquent\Model&Authenticatable> $modelClass */
         $modelClass = $model;
         /** @var \Illuminate\Database\Eloquent\Model|null $found */
-        $found = $modelClass::where('email', $credentials['email'])->first();
+        $found = $modelClass::query()->where('email', $credentials['email'])->first();
 
         return $found instanceof Authenticatable ? $found : null;
     }

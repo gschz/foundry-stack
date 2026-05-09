@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Api\ApiAuthController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,28 +17,7 @@ use Illuminate\Support\Facades\Route;
 
 // Grupo de rutas para la API con limitador de peticiones global.
 Route::middleware(['throttle:api', 'api'])->group(function (): void {
-
-    /**
-     * Endpoint para la autenticación de usuarios y generación de tokens Sanctum.
-     * Utiliza un limitador de peticiones específico para prevenir ataques de fuerza bruta.
-     *
-     * POST /api/sanctum/token
-     */
-    Route::post(
-        '/sanctum/token',
-        [ApiAuthController::class, 'login']
-    )->middleware('throttle:6,1')->name('api.login');
-
-    /**
-     * Endpoint para obtener la información del usuario autenticado.
-     * Requiere un token de Sanctum válido para la autenticación.
-     *
-     * GET /api/user
-     */
-    Route::middleware('auth:sanctum')->get(
-        '/user',
-        [ApiAuthController::class, 'user']
-    )->name('api.user');
+    //
 });
 
 /**

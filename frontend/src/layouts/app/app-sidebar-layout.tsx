@@ -11,23 +11,23 @@ import { type ReactNode } from 'react';
 
 interface AppSidebarLayoutProps {
   children: ReactNode;
-  breadcrumbs?: BreadcrumbItem[];
+  breadcrumbs: BreadcrumbItem[];
   user: User | null;
-  mainNavItems?: NavItemDefinition[];
-  moduleNavItems?: NavItemDefinition[];
-  contextualNavItems?: NavItemDefinition[];
-  globalNavItems?: NavItemDefinition[];
+  mainNavItems: NavItemDefinition[];
+  moduleNavItems: NavItemDefinition[];
+  contextualNavItems: NavItemDefinition[];
+  globalNavItems: NavItemDefinition[];
   headerActions?: ReactNode;
 }
 
 export default function AppSidebarLayout({
   children,
-  breadcrumbs = [],
+  breadcrumbs,
   user,
-  mainNavItems = [],
-  moduleNavItems = [],
-  contextualNavItems = [],
-  globalNavItems = [],
+  mainNavItems,
+  moduleNavItems,
+  contextualNavItems,
+  globalNavItems,
   headerActions,
 }: Readonly<AppSidebarLayoutProps>) {
   const { passwordChangeRequired } = usePage().props as { passwordChangeRequired?: boolean };

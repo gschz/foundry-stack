@@ -5,17 +5,15 @@ declare(strict_types=1);
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
  * Notificación para el restablecimiento de contraseña.
- *
- * Esta notificación se envía cuando un usuario solicita restablecer su contraseña.
- * Contiene un enlace seguro y con tiempo de expiración para que el usuario pueda
- * crear una nueva contraseña. Hereda la funcionalidad base de Laravel para
- * esta tarea, pero está estandarizada para el proyecto.
  */
 final class ResetPasswordNotification extends Notification implements ShouldQueue
 {
@@ -24,7 +22,7 @@ final class ResetPasswordNotification extends Notification implements ShouldQueu
     /**
      * El callback que se debe usar para construir el mensaje de correo.
      *
-     * @var (callable(\Illuminate\Contracts\Auth\CanResetPassword, string): MailMessage)|null
+     * @var (callable(CanResetPassword, string): MailMessage)|null
      */
     public static $toMailCallback;
 
@@ -33,15 +31,15 @@ final class ResetPasswordNotification extends Notification implements ShouldQueu
      *
      * @param  string  $token  El token de restablecimiento de contraseña.
      */
-    public function __construct(public string $token) {}
+    public function __construct(public string $token)
+    {
+        //
+    }
 
     /**
      * Define un callback para personalizar la construcción del mensaje de correo.
      *
-     * Esto permite modificar la lógica de envío de correo desde un Service Provider
-     * sin tener que sobreescribir toda la clase de notificación.
-     *
-     * @param  callable(\Illuminate\Contracts\Auth\CanResetPassword, string): MailMessage  $callback
+     * @param  callable(CanResetPassword, string): MailMessage  $callback
      */
     public static function toMailUsing(mixed $callback): void
     {
@@ -61,7 +59,7 @@ final class ResetPasswordNotification extends Notification implements ShouldQueu
     /**
      * Construye la representación por correo electrónico de la notificación.
      *
-     * @param  \Illuminate\Database\Eloquent\Model&\Illuminate\Contracts\Auth\Authenticatable&\Illuminate\Contracts\Auth\CanResetPassword  $notifiable
+     * @param  Model&Authenticatable&CanResetPassword  $notifiable
      */
     public function toMail(object $notifiable): MailMessage
     {
@@ -85,35 +83,21 @@ final class ResetPasswordNotification extends Notification implements ShouldQueu
         $displayName = is_string($nameValue) ? $nameValue : 'Usuario';
 
         return (new MailMessage)
-            ->subject(
-                'Notificación de Restablecimiento de Contraseña'
-            )
-            ->greeting(
-                sprintf('¡Hola, %s!', $displayName)
-            )
-            ->line(
-                'Estás recibiendo este correo porque hemos recibido una solicitud de restablecimiento de contraseña para tu cuenta.'
-            )
-            ->action(
-                'Restablecer Contraseña',
-                $this->resetUrl($notifiable)
-            )
-            ->line(
-                sprintf('Este enlace de restablecimiento de contraseña expirará en %d minutos.', $expirationInMinutes)
-            )
-            ->line(
-                'Si no solicitaste este cambio, puedes ignorar este mensaje de forma segura.'
-            )
-            ->line(
-                'Este es un correo electrónico generado automáticamente. Por favor, no respondas a este mensaje.'
-            )
-            ->salutation('Saludos,');
+            ->subject('Notificación de Restablecimiento de Contraseña')
+            ->greeting(sprintf('¡Hola, %s!', $displayName))
+            ->line('Estás recibiendo este correo porque hemos recibido una solicitud de restablecimiento de contraseña para tu cuenta.')
+            ->action('Restablecer Contraseña', $this->resetUrl($notifiable))
+            ->line(sprintf(
+                'Este enlace de restablecimiento de contraseña expirará en %d minutos.',
+                $expirationInMinutes
+            ))
+            ->line('Si no solicitaste este cambio, puedes ignorar este mensaje de forma segura.')
+            ->line('Este correo electrónico es generado automáticamente. Por favor, no respondas a este mensaje.');
     }
 
     /**
      * Obtiene la representación de la notificación como un array.
      *
-     * @param  \Illuminate\Database\Eloquent\Model&\Illuminate\Contracts\Auth\Authenticatable&\Illuminate\Contracts\Auth\CanResetPassword  $notifiable
      * @return array<string, mixed>
      */
     public function toArray(object $notifiable): array
@@ -136,7 +120,7 @@ final class ResetPasswordNotification extends Notification implements ShouldQueu
     /**
      * Genera la URL de restablecimiento de contraseña para el usuario notificado.
      *
-     * @param  \Illuminate\Database\Eloquent\Model&\Illuminate\Contracts\Auth\Authenticatable&\Illuminate\Contracts\Auth\CanResetPassword  $notifiable
+     * @param  Model&Authenticatable&CanResetPassword  $notifiable
      */
     private function resetUrl(object $notifiable): string
     {

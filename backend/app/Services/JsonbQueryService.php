@@ -48,11 +48,23 @@ final class JsonbQueryService
             // PostgreSQL permite consultas más avanzadas con el operador @>
             $jsonPath = $this->buildJsonPath($column, $path);
 
-            return $query->whereRaw(sprintf('%s %s ?', $jsonPath, $operator), [$this->formatJsonValue($value)]);
+            return $query->whereRaw(
+                sprintf(
+                    '%s %s ?',
+                    $jsonPath,
+                    $operator
+                ),
+                [$this->formatJsonValue($value)]
+            );
         }
 
         // Para SQLite y MySQL, usamos la sintaxis estándar de Laravel
-        $fullPath = $path !== '' && $path !== '0' ? sprintf('%s->%s', $column, $path) : $column;
+        $fullPath = $path !== '' && $path !== '0'
+            ? sprintf(
+                '%s->%s',
+                $column,
+                $path
+            ) : $column;
 
         return $query->where($fullPath, $operator, $value);
     }
@@ -78,16 +90,34 @@ final class JsonbQueryService
     ): Builder|EloquentBuilder {
         if ($this->isPostgres()) {
             // Usamos el operador JSONB específico de PostgreSQL (más eficiente)
-            return $query->whereRaw(sprintf('%s->>? %s ?', $jsonColumn, $operator), [$property, $value]);
+            return $query->whereRaw(
+                sprintf(
+                    '%s->>? %s ?',
+                    $jsonColumn,
+                    $operator
+                ),
+                [$property, $value]
+            );
         }
 
         // Fallback a la funcionalidad JSON estándar de Laravel
         if ($operator === '=') {
-            return $query->whereJsonContains($jsonColumn, [$property => $value]);
+            return $query->whereJsonContains(
+                $jsonColumn,
+                [$property => $value]
+            );
         }
 
         // Para otros operadores, usamos whereRaw
-        return $query->whereRaw(sprintf("JSON_EXTRACT(%s, '\$.%s') %s ?", $jsonColumn, $property, $operator), [$value]);
+        return $query->whereRaw(
+            sprintf(
+                "JSON_EXTRACT(%s, '\$.%s') %s ?",
+                $jsonColumn,
+                $property,
+                $operator
+            ),
+            [$value]
+        );
     }
 
     /**
@@ -98,15 +128,25 @@ final class JsonbQueryService
      * @param  string|null  $indexName  Nombre del índice (opcional)
      * @return bool Verdadero si se creó el índice, falso si no es PostgreSQL
      */
-    public function createJsonbIndex(string $table, string $column, ?string $indexName = null): bool
-    {
+    public function createJsonbIndex(
+        string $table,
+        string $column,
+        ?string $indexName = null
+    ): bool {
         if (! $this->isPostgres()) {
             return false;
         }
 
         $indexName ??= sprintf('idx_%s_%s', $table, $column);
 
-        return DB::statement(sprintf('CREATE INDEX IF NOT EXISTS %s ON %s USING GIN (%s)', $indexName, $table, $column));
+        return DB::statement(
+            sprintf(
+                'CREATE INDEX IF NOT EXISTS %s ON %s USING GIN (%s)',
+                $indexName,
+                $table,
+                $column
+            )
+        );
     }
 
     /**
@@ -128,12 +168,22 @@ final class JsonbQueryService
     ): Builder|EloquentBuilder {
         if ($this->isPostgres()) {
             // Búsqueda difusa en PostgreSQL con ILIKE para ignorar mayúsculas/minúsculas
-            return $query->whereRaw($jsonColumn.'->>? ILIKE ?', [$property, sprintf('%%%s%%', $searchTerm)]);
+            return $query->whereRaw(
+                $jsonColumn.'->>? ILIKE ?',
+                [$property, sprintf('%%%s%%', $searchTerm)]
+            );
         }
 
         // Para otros motores, esto es más complejo y menos eficiente
         // Aquí usamos una aproximación, aunque no es óptima para grandes conjuntos de datos
-        return $query->whereRaw(sprintf("JSON_EXTRACT(%s, '\$.%s') LIKE ?", $jsonColumn, $property), [sprintf('%%%s%%', $searchTerm)]);
+        return $query->whereRaw(
+            sprintf(
+                "JSON_EXTRACT(%s, '\$.%s') LIKE ?",
+                $jsonColumn,
+                $property
+            ),
+            [sprintf('%%%s%%', $searchTerm)]
+        );
     }
 
     /**
@@ -163,7 +213,10 @@ final class JsonbQueryService
                 $bindings[] = sprintf('%%%s%%', $searchTerm);
             }
 
-            return $query->whereRaw('('.implode(' OR ', $conditions).')', $bindings);
+            return $query->whereRaw(
+                '('.implode(' OR ', $conditions).')',
+                $bindings
+            );
         }
 
         // Para otros motores, hacemos una aproximación
@@ -171,7 +224,14 @@ final class JsonbQueryService
             EloquentBuilder|Builder $q
         ) use ($jsonColumn, $properties, $searchTerm): void {
             foreach ($properties as $property) {
-                $q->orWhereRaw(sprintf("JSON_EXTRACT(%s, '\$.%s') LIKE ?", $jsonColumn, $property), [sprintf('%%%s%%', $searchTerm)]);
+                $q->orWhereRaw(
+                    sprintf(
+                        "JSON_EXTRACT(%s, '\$.%s') LIKE ?",
+                        $jsonColumn,
+                        $property
+                    ),
+                    [sprintf('%%%s%%', $searchTerm)]
+                );
             }
         });
     }
@@ -196,14 +256,33 @@ final class JsonbQueryService
         if ($this->isPostgres()) {
             $operator = $exists ? 'IS NOT NULL' : 'IS NULL';
 
-            return $query->whereRaw(sprintf('%s->?::text %s', $jsonColumn, $operator), [$property]);
+            return $query->whereRaw(
+                sprintf(
+                    '%s->?::text %s',
+                    $jsonColumn,
+                    $operator
+                ),
+                [$property]
+            );
         }
 
         if ($exists) {
-            return $query->whereRaw(sprintf("JSON_EXTRACT(%s, '\$.%s') IS NOT NULL", $jsonColumn, $property));
+            return $query->whereRaw(
+                sprintf(
+                    "JSON_EXTRACT(%s, '\$.%s') IS NOT NULL",
+                    $jsonColumn,
+                    $property
+                )
+            );
         }
 
-        return $query->whereRaw(sprintf("JSON_EXTRACT(%s, '\$.%s') IS NULL", $jsonColumn, $property));
+        return $query->whereRaw(
+            sprintf(
+                "JSON_EXTRACT(%s, '\$.%s') IS NULL",
+                $jsonColumn,
+                $property
+            )
+        );
     }
 
     /**
@@ -226,11 +305,25 @@ final class JsonbQueryService
     ): Builder|EloquentBuilder {
         if ($this->isPostgres()) {
             // Para PostgreSQL, convertimos el valor a texto para un ordenamiento más consistente
-            return $query->orderByRaw(sprintf('%s->>? %s', $jsonColumn, $direction), [$property]);
+            return $query->orderByRaw(
+                sprintf(
+                    '%s->>? %s',
+                    $jsonColumn,
+                    $direction
+                ),
+                [$property]
+            );
         }
 
         // Para otros motores
-        return $query->orderByRaw(sprintf("JSON_EXTRACT(%s, '\$.%s') %s", $jsonColumn, $property, $direction));
+        return $query->orderByRaw(
+            sprintf(
+                "JSON_EXTRACT(%s, '\$.%s') %s",
+                $jsonColumn,
+                $property,
+                $direction
+            )
+        );
     }
 
     /**
@@ -271,7 +364,10 @@ final class JsonbQueryService
     private function formatJsonValue(mixed $value): string
     {
         if (is_array($value)) {
-            $encoded = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $encoded = json_encode(
+                $value,
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
 
             return is_string($encoded) ? $encoded : '';
         }
@@ -284,7 +380,10 @@ final class JsonbQueryService
             return (string) $value;
         }
 
-        $encoded = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $encoded = json_encode(
+            $value,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
 
         return is_string($encoded) ? $encoded : '';
     }

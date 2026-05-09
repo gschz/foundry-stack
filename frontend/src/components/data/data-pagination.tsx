@@ -74,7 +74,7 @@ export function Pagination({
               }}
               disabled={disabled}
             >
-              <SelectTrigger className="h-8 w-[80px]" aria-label="Elementos por página">
+              <SelectTrigger className="h-8 w-20" aria-label="Elementos por página">
                 <SelectValue placeholder={perPage} />
               </SelectTrigger>
               <SelectContent>

@@ -28,7 +28,7 @@ final class EarlyBindingsServiceProvider extends ServiceProvider
         }
 
         // Asegurar driver de caché por defecto si no está configurado
-        $config = app(ConfigRepository::class);
+        $config = resolve(ConfigRepository::class);
         if ($config->get('cache.default') === null) {
             $config->set('cache.default', 'array');
         }
@@ -46,7 +46,7 @@ final class EarlyBindingsServiceProvider extends ServiceProvider
 
                     $locale = 'en';
                     if ($app->has('config')) {
-                        $localeValue = app(
+                        $localeValue = resolve(
                             ConfigRepository::class
                         )->get('app.locale');
                         $locale = is_string($localeValue)
@@ -57,7 +57,7 @@ final class EarlyBindingsServiceProvider extends ServiceProvider
 
                     $fallback = 'en';
                     if ($app->has('config')) {
-                        $fallbackValue = app(
+                        $fallbackValue = resolve(
                             ConfigRepository::class
                         )->get('app.fallback_locale');
                         $fallback = is_string($fallbackValue)
